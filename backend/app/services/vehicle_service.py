@@ -1,87 +1,145 @@
-from bson import ObjectId
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 
 from app.repositories.vehicle_repository import VehicleRepository
 from app.schemas.vehicle import (
-    VehicleCreate, VehicleListItem, VehicleResponse, VehicleUpdate
+    VehicleCreate,
+    VehicleListItem,
+    VehicleResponse,
+    VehicleStatus,
+    VehicleUpdate,
 )
+from app.shared.utils.mongodb import to_object_id
+from app.shared.utils.serialization import serialize_document
+
 
 class VehicleService:
     def __init__(self):
         self.repository = VehicleRepository()
 
-        @staticmethod
-        def _serialize(document: dict) -> dict:
-            """
-            Convert MongoDB document into JSON
-            """
+    async def create_vehicle(self,user_id: str,vehicle: VehicleCreate,) -> VehicleResponse:
 
-            document["id"] = str(document.pop("_id"))
-            document["user_id"] = str(document["user_id"])
+        now = datetime.now(timezone.utc)
 
-            return document
+        document = vehicle.model_dump()
 
-        async def create_vehicle(self, user_id: str, vehicle: VehicleCreate) -> VehicleResponse:
-            document = await self.repository.create_vehicle(
-                user_id=user_id,
-                vehicle=vehicle,
+        document["user_id"] = user_id
+        document["status"] = VehicleStatus.ACTIVE
+        document["created_at"] = now
+        document["updated_at"] = now
+
+        created = await self.repository.insert(document)
+
+        return VehicleResponse(
+            **serialize_document(created)
+        )
+
+    async def get_all_vehicles(self,user_id: str,) -> list[VehicleListItem]:
+
+        vehicles = await self.repository.find_many(
+            {
+                "user_id": user_id
+            }
+        )
+
+        return [
+            VehicleListItem(
+                **serialize_document(vehicle)
+            )
+            for vehicle in vehicles
+        ]
+
+    async def get_vehicle(self,vehicle_id: str,user_id: str,) -> VehicleResponse:
+
+        vehicle = await self.repository.find_one(
+            {
+                "_id": to_object_id(vehicle_id)
+            }
+        )
+
+        if vehicle is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Vehicle not found.",
             )
 
-            return VehicleResponse(**self._serialize(document))
+        if vehicle["user_id"] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied.",
+            )
 
-        async def get_all_vehicle(self, user_id: str) -> list[VehicleListItem]:
-            vehicles = await self.repository.get_all_vehicles(user_id)
+        return VehicleResponse(
+            **serialize_document(vehicle)
+        )
 
-            return [
-                VehicleListItem(**self._serialize(vehicle))
-                for vehicle in vehicles
-            ]
+    async def update_vehicle(self,vehicle_id: str,user_id: str,update: VehicleUpdate,) -> VehicleResponse:
 
-        async def get_vehicle(self, vehicle_id: str, user_id: str) -> VehicleResponse:
-            vehicle = await self.repository.get_vehicle_by_id(vehicle_id)
+        vehicle = await self.repository.find_one(
+            {
+                "_id": to_object_id(vehicle_id)
+            }
+        )
 
-            if vehicle is None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Vehicle not found",
-                )
-            if vehicle["user_id"] != user_id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="No access to vehicle"
-                )
-            return VehicleResponse(**self._serialize(vehicle))
+        if vehicle is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Vehicle not found.",
+            )
 
-        async def update_vehicle(self, vehicle_id: str, user_id: str, update: VehicleUpdate) -> VehicleResponse:
-            vehicle = await self.repository.get_vehicle_by_id(vehicle_id)
+        if vehicle["user_id"] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied.",
+            )
 
-            if vehicle is None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Vehicle not found",
-                )
+        update_data = update.model_dump(
+            exclude_none=True,
+            exclude_unset=True,
+        )
 
-            if vehicle["user_id"] != user_id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You do not have permission.",
-                )
-            updated = await self.repository.update_vehicle(vehicle_id, update)
+        update_data["updated_at"] = datetime.now(
+            timezone.utc
+        )
 
-            return VehicleResponse(**self._serialize(updated))
+        updated = await self.repository.update(
+            {
+                "_id": to_object_id(vehicle_id)
+            },
+            update_data,
+        )
 
-        async def delete_vehicle(self, vehicle_id: str, user_id: str):
-            vehicle = await self.repository.get_vehicle_by_id(vehicle_id)
-            if vehicle is None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Vehicle not found",
-                )
-            if vehicle["user_id"] != user_id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="No permission",
-                )
+        return VehicleResponse(
+            **serialize_document(updated)
+        )
 
-            deleted = await self.repository.delete_vehicle(vehicle_id)
-            return {"success": deleted}
+    async def delete_vehicle(self,vehicle_id: str,user_id: str,) -> dict:
+
+        vehicle = await self.repository.find_one(
+            {
+                "_id": to_object_id(vehicle_id)
+            }
+        )
+
+        if vehicle is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Vehicle not found.",
+            )
+
+        if vehicle["user_id"] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied.",
+            )
+
+        deleted = await self.repository.delete(
+            {
+                "_id": to_object_id(vehicle_id)
+            }
+        )
+
+        return {
+            "success": deleted
+        }
