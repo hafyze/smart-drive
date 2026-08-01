@@ -1,5 +1,3 @@
-from bson import ObjectId
-
 from typing import Any
 
 def serialize_document(document: dict[str, Any] | None) -> dict[str, Any]:    
