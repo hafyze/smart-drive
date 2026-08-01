@@ -1,7 +1,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
-    app_name: str = "Autocare API"
+    app_name: str = "AutoCare API"
     app_version: str = "1.0.0"
 
     mongodb_uri: str = "mongodb://127.0.0.1:27017"
@@ -10,7 +11,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-later"
     jwt_algorithm: str = "HS256"
 
-    cors_origin: list[str] = [
+    cors_origins: list[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
@@ -18,7 +19,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore"
+        extra="ignore",
     )
 
 settings = Settings()

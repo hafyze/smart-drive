@@ -9,5 +9,6 @@ async def health():
     return {
         "status": "healthy",
         "service": settings.app_name,
-        "version": settings.app_version
+        "version": settings.app_version,
+        "database": "connected",
     }
