@@ -70,3 +70,14 @@ class AuthService:
             access_token=token,
             user=UserResponse.model_validate(serialized)
         )
+
+    async def get_current_user(self, user_id: str):
+        user = await self.repository.get_by_id(user_id)
+
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials"
+            )
+
+        return serialize_document(user)

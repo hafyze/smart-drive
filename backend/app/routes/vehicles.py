@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 
-from app.routes.deps import get_current_user_id
+from app.routes.auth import get_current_user
 from app.schemas.vehicle import (
     VehicleCreate,
     VehicleListItem,
@@ -23,12 +23,12 @@ router = APIRouter(
 )
 async def create_vehicle(
     vehicle: VehicleCreate, 
-    user_id: str = Depends(get_current_user_id), 
+    current_user: dict = Depends(get_current_user), 
     service: VehicleService = Depends(get_vehicle_service)
     ):
 
     return await service.create_vehicle(
-        user_id=user_id, vehicle=vehicle
+        user_id=current_user["id"], vehicle=vehicle
     )
 
 # Get Vehicle
@@ -38,13 +38,13 @@ async def create_vehicle(
 )
 async def get_vehicle(
     vehicle_id: str, 
-    user_id: str = Depends(get_current_user_id),
+    current_user: dict = Depends(get_current_user),
     service: VehicleService = Depends(get_vehicle_service)
     ):
 
     return await service.get_vehicle(
         vehicle_id=vehicle_id,
-        user_id=user_id
+        user_id=current_user["id"]
     )
 
 # Update Vehicle
@@ -55,13 +55,13 @@ async def get_vehicle(
 async def update_vehicle(
     vehicle_id: str, 
     vehicle: VehicleUpdate, 
-    user_id: str = Depends(get_current_user_id),
+    current_user: dict = Depends(get_current_user),
     service: VehicleService = Depends(get_vehicle_service),
     ):
 
     return await service.update_vehicle(
         vehicle_id=vehicle_id,
-        user_id=user_id,
+        user_id=current_user["id"],
         update=vehicle,
     )
 
@@ -71,11 +71,11 @@ async def update_vehicle(
 )
 async def delete_vehicle(
     vehicle_id: str, 
-    user_id: str = Depends(get_current_user_id),
+    current_user: dict = Depends(get_current_user),
     service: VehicleService = Depends(get_vehicle_service)
     ):
 
     return await service.delete_vehicle(
         vehicle_id=vehicle_id,
-        user_id=user_id
+        user_id=current_user["id"]
     )
