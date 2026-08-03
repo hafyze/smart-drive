@@ -8,7 +8,7 @@ from app.schemas.vehicle import (
     VehicleUpdate,
 )
 from app.services.vehicle_service import VehicleService
-from app.dependencies.services import get_vehicle_service
+from app.dependencies.services_dependencies import get_vehicle_service
 
 router = APIRouter(
     prefix="/vehicles",
