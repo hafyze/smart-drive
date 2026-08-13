@@ -1,13 +1,21 @@
 import { LogOut } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import { OWNER_BOTTOM_NAVIGATION } from "@/shared/constants/Navigation";
 import { Button } from "../../ui/button";
 
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { ROUTES } from "@/app/router/routes";
+
 export function SidebarFooter() {
+    const navigate = useNavigate();
+    const { logout } = useAuth();
     const handleLogout = () => {
-        // TODO: implement auth in sprint 2
-        console.log("logout");
+        logout();
+
+        navigate(ROUTES.LOGIN, {
+            replace: true,
+        });
     };
 
     return(
