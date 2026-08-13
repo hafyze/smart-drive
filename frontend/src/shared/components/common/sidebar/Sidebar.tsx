@@ -1,5 +1,4 @@
 import {
-    OWNER_BOTTOM_NAVIGATION,
     OWNER_NAVIGATION,
 } from "@/shared/constants/Navigation"
 
