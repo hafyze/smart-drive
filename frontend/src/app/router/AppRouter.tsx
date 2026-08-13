@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
+import ProtectedRoute from "./ProtectedRoute";
+
 import DashboardLayout from "@/layouts/DashboardLayout";
 import AuthLayout from "@/layouts/AuthLayout";
 
@@ -26,48 +28,49 @@ export default function AppRouter() {
                 <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
             </Route>
 
-            <Route element={<DashboardLayout />}>
+            <Route element={<ProtectedRoute />}>
+                <Route element={<DashboardLayout />}>
+                    <Route
+                        path={ROUTES.DASHBOARD}
+                        element={<DashboardPage />}
+                    />
 
-                <Route
-                    path={ROUTES.DASHBOARD}
-                    element={<DashboardPage />}
-                />
+                    <Route
+                        path={ROUTES.GARAGE}
+                        element={<GaragePage />}
+                    />
 
-                <Route
-                    path={ROUTES.GARAGE}
-                    element={<GaragePage />}
-                />
+                    <Route
+                        path={ROUTES.AI}
+                        element={<MaintenancePage />}
+                    />
 
-                <Route
-                    path={ROUTES.AI}
-                    element={<MaintenancePage />}
-                />
+                    <Route
+                        path={ROUTES.WORKSHOPS}
+                        element={<WorkshopsPage />}
+                    />
 
-                <Route
-                    path={ROUTES.WORKSHOPS}
-                    element={<WorkshopsPage />}
-                />
+                    <Route
+                        path={ROUTES.ANALYTICS}
+                        element={<AnalyticsPage />}
+                    />
 
-                <Route
-                    path={ROUTES.ANALYTICS}
-                    element={<AnalyticsPage />}
-                />
+                    <Route
+                        path={ROUTES.FLEET}
+                        element={<FleetPage />}
+                    />
 
-                <Route
-                    path={ROUTES.FLEET}
-                    element={<FleetPage />}
-                />
+                    <Route
+                        path={ROUTES.PROFILE}
+                        element={<ProfilePage />}
+                    />
 
-                <Route
-                    path={ROUTES.PROFILE}
-                    element={<ProfilePage />}
-                />
+                    <Route
+                        path={ROUTES.SETTINGS}
+                        element={<SettingsPage />}
+                    />
 
-                <Route
-                    path={ROUTES.SETTINGS}
-                    element={<SettingsPage />}
-                />
-
+                </Route>
             </Route>
 
             <Route

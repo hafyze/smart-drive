@@ -1,3 +1,176 @@
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, CarFront } from "lucide-react";
+
+import { Button } from "@/shared/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { toast } from "@/shared/components/ui/toast";
+
+import { ROUTES } from "@/app/router/routes";
+
+import { authApi } from "../api/authApi";
+import { useAuth } from "../hooks/useAuth";
+import {
+    loginSchema,
+    type LoginFormValues,
+} from "../validation/authSchemas";
+
 export default function LoginPage() {
-    return <h1>LoginPage</h1>;
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const { setAuth } = useAuth();
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<LoginFormValues>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: {
+            email: "",
+            password: "",
+        },
+    });
+
+    const onSubmit = async (data: LoginFormValues) => {
+        try {
+            setIsLoading(true);
+
+            const response = await authApi.login({
+                email: data.email,
+                password: data.password,
+            });
+
+            setAuth(
+                response.user,
+                response.access_token
+            );
+
+            toast.add({
+                title: "Welcome back!",
+                type: "success",
+            });
+
+            const from =
+                location.state?.from?.pathname ??
+                ROUTES.DASHBOARD;
+
+            navigate(from, {
+                replace: true,
+            });
+        } catch (error) {
+            console.error("Login failed:", error);
+
+            toast.add({
+                title: "Unable to sign in",
+                description:
+                    "Please check your email and password.",
+                type: "error",
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
+            <Card className="w-full max-w-md">
+                <CardHeader className="space-y-4">
+                    <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                        <CarFront className="size-5" />
+                    </div>
+
+                    <div className="space-y-1">
+                        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+                            Welcome back
+                        </h1>
+
+                        <p className="text-sm text-muted-foreground">
+                            Sign in to your Smart Drive account.
+                        </p>
+                    </div>
+                </CardHeader>
+
+                <CardContent>
+                    <form
+                        onSubmit={handleSubmit(onSubmit)}
+                        className="space-y-5"
+                    >
+                        <div className="space-y-2">
+                            <Label htmlFor="email">
+                                Email
+                            </Label>
+
+                            <Input
+                                id="email"
+                                type="email"
+                                placeholder="you@example.com"
+                                autoComplete="email"
+                                disabled={isLoading}
+                                {...register("email")}
+                            />
+
+                            {errors.email && (
+                                <p className="text-sm text-destructive">
+                                    {errors.email.message}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="password">
+                                Password
+                            </Label>
+
+                            <Input
+                                id="password"
+                                type="password"
+                                placeholder="Enter your password"
+                                autoComplete="current-password"
+                                disabled={isLoading}
+                                {...register("password")}
+                            />
+
+                            {errors.password && (
+                                <p className="text-sm text-destructive">
+                                    {errors.password.message}
+                                </p>
+                            )}
+                        </div>
+
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={isLoading}
+                        >
+                            {isLoading && (
+                                <Loader2 className="size-4 animate-spin" />
+                            )}
+
+                            {isLoading
+                                ? "Signing in..."
+                                : "Sign in"}
+                        </Button>
+
+                        <p className="text-center text-sm text-muted-foreground">
+                            Don't have an account?{" "}
+                            <Link
+                                to={ROUTES.REGISTER}
+                                className="font-medium text-primary hover:underline"
+                            >
+                                Create an account
+                            </Link>
+                        </p>
+                    </form>
+                </CardContent>
+            </Card>
+        </div>
+    );
 }

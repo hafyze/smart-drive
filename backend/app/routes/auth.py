@@ -24,7 +24,7 @@ async def register(request: RegisterRequest, service: AuthService = Depends(get_
     return await service.register(request)
 
 @router.post(
-    "login",
+    "/login",
     response_model=TokenResponse,
 )
 async def login(request: LoginRequst, service: AuthService = Depends(get_auth_service)):
