@@ -1,7 +1,8 @@
+import AppRouter from "./app/router/AppRouter"
 
 
 function App() {
-  return <div>Smart Drive</div>
+  return <div><AppRouter /></div>
 }
 
 export default App
