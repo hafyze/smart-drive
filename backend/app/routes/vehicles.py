@@ -47,6 +47,19 @@ async def get_vehicle(
         user_id=current_user["id"]
     )
 
+# Get All vehicle
+@router.get(
+    "",
+    response_model=list[VehicleListItem],
+)
+async def get_all_vehicles(
+    current_user: dict = Depends(get_current_user),
+    service: VehicleService = Depends(get_vehicle_service),
+):
+    return await service.get_all_vehicles(
+        user_id=current_user["id"]
+    )
+
 # Update Vehicle
 @router.put(
     "/{vehicle_id}",
