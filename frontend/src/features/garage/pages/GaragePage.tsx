@@ -23,8 +23,9 @@ export default function GaragePage() {
                         Garage
                     </h1>
 
-                    <p className="text-muted-foreground">
-                        Manage your vehicles and keep track of their information
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        {vehicles?.length ?? 0}{" "}
+                        {vehicles?.length === 1 ? "vehicle" : "vehicles"} in your garage
                     </p>
                 </div>
 
