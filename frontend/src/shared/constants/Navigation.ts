@@ -4,7 +4,7 @@ import {
   BrainCircuit,
   Wrench,
   ChartColumn,
-  Truck,
+  // Truck,
   Settings,
   User,
 } from "lucide-react";
