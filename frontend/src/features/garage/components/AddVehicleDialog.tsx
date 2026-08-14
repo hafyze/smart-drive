@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isAxiosError } from "axios";
+import { toast } from "@/shared/components/ui/toast"
 
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -63,19 +65,42 @@ export function AddVehicleDialog() {
     });
 
     const onSubmit = async (values: VehicleCreateFormValues) => {
-        await createVehicle.mutateAsync({
-            ...values,
-            engine: values.engine || null,
-            plate_number: values.plate_number || null,
-            purchase_date: values.purchase_date || null,
-            vin: values.vin || null,
-            color: values.color || null,
-            photo_url: values.photo_url || null,
-            notes: values.notes || null,
-        });
+        try {
+            await createVehicle.mutateAsync({
+                ...values,
+                engine: values.engine || null,
+                plate_number: values.plate_number || null,
+                purchase_date: values.purchase_date || null,
+                vin: values.vin || null,
+                color: values.color || null,
+                photo_url: values.photo_url || null,
+                notes: values.notes || null,
+            });
 
-        form.reset();
-        setOpen(false);
+            toast.add({
+                title: "Vehicle added",
+                description: `${values.nickname} has been added to your garage.`,
+                type: "success",
+            })
+
+            form.reset();
+            setOpen(false);
+        }catch (error) {
+            let message = "Unable to add the vehicle. Please try again.";
+
+            if (isAxiosError(error)) {
+                const detail = error. response?.data?.detail;
+                if (typeof detail === "string") {
+                    message = detail;
+                }
+            }
+
+            toast.add({
+                title: "Failed to add vehicle",
+                description: message,
+                type: "error",
+            })
+        }
     };
 
     const handleOpenChange = (value: boolean) => {

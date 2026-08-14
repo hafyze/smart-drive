@@ -7,6 +7,7 @@ export const ROUTES = {
   DASHBOARD: "/dashboard",
 
   GARAGE: "/garage",
+  GARAGE_VEHICLE: "/garage/:vehicleId",
 
   AI: "/ai",
 
