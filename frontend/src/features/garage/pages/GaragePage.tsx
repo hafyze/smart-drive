@@ -1,10 +1,8 @@
-import { Plus } from "lucide-react";
-
-import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
 
 import { useVehicles } from "../hooks/useVehicles";
 import { VehicleCard } from "../components/VehicleCard";
+import { AddVehicleDialog } from "../components/AddVehicleDialog";
 
 export default function GaragePage() {
     const {
@@ -29,10 +27,7 @@ export default function GaragePage() {
                     </p>
                 </div>
 
-                <Button>
-                    <Plus />
-                    Add Vehicle
-                </Button>
+                <AddVehicleDialog />
             </div>
 
             {/* Loading */}
@@ -91,7 +86,7 @@ export default function GaragePage() {
 
             {/* Vehicle list */}
             {!isLoading && !isError && vehicles && vehicles.length > 0 && (
-                <div>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {vehicles.map((vehicle) => (
                         <VehicleCard
                             key={vehicle.id}

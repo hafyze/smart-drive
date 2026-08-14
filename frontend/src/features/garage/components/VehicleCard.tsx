@@ -17,8 +17,8 @@ interface VehicleCardProps {
 
 export function VehicleCard({ vehicle }: VehicleCardProps) {
     return (
-        <Card>
-            <div>
+        <Card className="overflow-hidden">
+            <div className="relative aspcet-[16/9] bg-muted">
                 {vehicle.photo_url ? (
                     <img
                         src={vehicle.photo_url}
