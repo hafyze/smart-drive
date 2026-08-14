@@ -4,6 +4,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
 
 import { useVehicles } from "../hooks/useVehicles";
+import { VehicleCard } from "../components/VehicleCard";
 
 export default function GaragePage() {
     const {
@@ -91,35 +92,10 @@ export default function GaragePage() {
             {!isLoading && !isError && vehicles && vehicles.length > 0 && (
                 <div>
                     {vehicles.map((vehicle) => (
-                        <Card key={vehicle.id}>
-                            <CardContent className="p-6">
-                                <div className="space-y-2">
-                                    <h2 className="font-heading text-lg font-semibold">
-                                        {vehicle.nickname}
-                                    </h2>
-                                    <p className="text-sm text-muted-foreground">
-                                        {vehicle.manufacturer} {vehicle.model}
-                                    </p>
-                                    <p className="text-sm">
-                                        {vehicle.variant}
-                                    </p>
-
-                                    <div className="flex gap-2 text-sm text-muted-foreground">
-                                        <span>{vehicle.year}</span>
-                                        <span>•</span>
-                                        <span>
-                                            {vehicle.current_mileage.toLocaleString()} km
-                                        </span>
-                                    </div>
-
-                                    <div className="pt-2">
-                                        <span className="text-xs font-medium">
-                                            {vehicle.status}
-                                        </span>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <VehicleCard
+                            key={vehicle.id}
+                            vehicle={vehicle}
+                        />
                     ))}
                 </div>
             )}
