@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { CarFront, Gauge, MoreHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -7,10 +8,19 @@ import {
     CardFooter,
     CardHeader,
 } from "@/shared/components/ui/card";
+
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
+
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 
 import type { VehicleListItem } from "../types/vehicle";
+import { DeleteVehicleDialog } from "./DeleteVehicleDialog";
 
 interface VehicleCardProps {
     vehicle: VehicleListItem;
@@ -20,9 +30,11 @@ interface VehicleCardProps {
 
 export function VehicleCard({ vehicle }: VehicleCardProps) {
     const navigate = useNavigate()
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     return (
-        <Card className="overflow-hidden">
+        <div>
+            <Card className="overflow-hidden">
             <div className="relative aspect-video bg-muted ">
                 {vehicle.photo_url ? (
                     <img
@@ -59,7 +71,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                 </p>
 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex- items-center gap-1.5">
+                    <div className="flex items-center gap-1.5">
                         <span>{vehicle.year}</span>
                     </div>
 
@@ -75,10 +87,45 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                     View Vehicle
                 </Button>
 
-                <Button variant="ghost" size="icon" aria-label="Vehicle actions">
-                    <MoreHorizontal />
-                </Button>
+                <DropdownMenu>
+                    <DropdownMenuTrigger
+                        render={
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Vehicle actions"
+                            >
+                                <MoreHorizontal />
+                            </Button>
+                        }
+                    />
+
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                            onClick={() =>
+                                navigate(`/garage/${vehicle.id}`)
+                            }
+                        >
+                            View Vehicle
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setDeleteDialogOpen(true)}
+                        >
+                            Delete Vehicle
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </CardFooter>
         </Card>
+
+        <DeleteVehicleDialog
+            vehicle={vehicle}
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+        />
+
+        </div>
     )
 }
