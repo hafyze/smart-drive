@@ -1,4 +1,5 @@
 import { CarFront, Gauge, MoreHorizontal } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import {
     Card,
@@ -15,10 +16,14 @@ interface VehicleCardProps {
     vehicle: VehicleListItem;
 }
 
+
+
 export function VehicleCard({ vehicle }: VehicleCardProps) {
+    const navigate = useNavigate()
+
     return (
         <Card className="overflow-hidden">
-            <div className="relative aspcet-[16/9] bg-muted">
+            <div className="relative aspect-video bg-muted ">
                 {vehicle.photo_url ? (
                     <img
                         src={vehicle.photo_url}
@@ -66,7 +71,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
             </CardContent>
 
             <CardFooter className="flex items-center justify-between">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => navigate(`/garage/${vehicle.id}`)}>
                     View Vehicle
                 </Button>
 
