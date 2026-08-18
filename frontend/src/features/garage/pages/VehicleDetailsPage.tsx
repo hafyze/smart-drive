@@ -5,6 +5,8 @@ import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 
+import { EditVehicleDialog } from "../components/EditVehicleDialog";
+
 import { useVehicle } from "../hooks/useVehicles";
 
 interface VehicleDetailProps {
@@ -126,6 +128,8 @@ export default function VehicleDetailsPage() {
                     </p>
                 </div>
             </div>
+
+            <EditVehicleDialog vehicle={vehicle}/>
 
             {/* Vehicle Overview */}
             <Card>

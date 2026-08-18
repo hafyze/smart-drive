@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
 
@@ -26,6 +26,7 @@ class VehicleService:
         now = datetime.now(timezone.utc)
 
         document = vehicle.model_dump()
+        document = self._serialize_update_data(document)
 
         document["user_id"] = user_id
         document["status"] = VehicleStatus.ACTIVE
@@ -71,6 +72,8 @@ class VehicleService:
             exclude_none=True,
             exclude_unset=True,
         )
+
+        update_data = self._serialize_update_data(update_data)
 
         update_data["updated_at"] = datetime.now(
             timezone.utc
@@ -119,3 +122,15 @@ class VehicleService:
                 detail="Access denied.",
             )
         return vehicle
+
+    @staticmethod
+    def _serialize_update_data(update_data: dict) -> dict:
+        for key, value in update_data.items():
+            if isinstance(value, date) and not isinstance(value, datetime):
+                update_data[key] = datetime.combine(
+                    value,
+                    datetime.min.time(),
+                    tzinfo=timezone.utc,
+                )
+
+        return update_data

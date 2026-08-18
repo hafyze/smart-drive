@@ -98,3 +98,13 @@ export type VehicleCreateFormInput = z.input<
 export type VehicleCreateFormValues = z.output<
   typeof vehicleCreateSchema
 >;
+
+export const vehicleUpdateSchema = vehicleCreateSchema.partial();
+
+export type VehicleUpdateFormInput = z.input<
+    typeof vehicleUpdateSchema
+>;
+
+export type VehicleUpdateFormValues = z.output<
+    typeof vehicleUpdateSchema
+>;
