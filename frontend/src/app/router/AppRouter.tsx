@@ -17,6 +17,7 @@ import AnalyticsPage from "@/features/analytics/pages/AnalyticsPage";
 import FleetPage from "@/features/fleet/pages/FleetPage";
 import ProfilePage from "@/features/profile/pages/ProfilePage";
 import SettingsPage from "@/features/settings/pages/SettingsPage";
+import VehicleDetailsPage from "@/features/garage/pages/VehicleDetailsPage";
 
 import { ROUTES } from "./routes";
 
@@ -38,6 +39,10 @@ export default function AppRouter() {
                     <Route
                         path={ROUTES.GARAGE}
                         element={<GaragePage />}
+                    />
+                    <Route 
+                        path={ROUTES.GARAGE_VEHICLE}
+                        element={<VehicleDetailsPage />}
                     />
 
                     <Route
