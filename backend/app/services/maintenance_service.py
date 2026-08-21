@@ -9,6 +9,7 @@ from app.schemas.maintenance import (
     MaintenanceCreate,
     MaintenanceResponse,
     MaintenanceStatus,
+    MaintenanceListItem
 )
 from app.shared.utils.mongodb import to_object_id
 from app.shared.utils.serialization import serialize_document
@@ -50,6 +51,34 @@ class MaintenanceService:
         serialized = serialize_document(created)
 
         return MaintenanceResponse.model_validate(serialized)
+
+    #Get all
+    async def get_all_maintenance(
+        self,
+        user_id: str,
+        vehicle_id: str | None = None,
+    ) -> list[MaintenanceListItem]:
+        filter_query = {
+            "user_id": user_id,
+        }
+
+        if vehicle_id is not None:
+            vehicle = await self._get_owned_vehicle(
+                vehicle_id,
+                user_id
+            )
+
+            filter_query["vehicle_id"] = vehicle["id"]
+
+        maintenance_records = await self.repository.find_many(
+            filter_query
+        )
+        return [
+            MaintenanceListItem.model_validate(
+                serialize_document(record)
+            )
+            for record in maintenance_records
+        ]
 
     # Private Helper
     async def _get_owned_vehicle(
