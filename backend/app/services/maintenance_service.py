@@ -1,0 +1,91 @@
+from datetime import date, datetime, timezone
+from typing import Any
+
+from fastapi import HTTPException, status
+
+from app.repositories.maintenance_repository import MaintenanceRepository
+from app.repositories.vehicle_repository import VehicleRepository
+from app.schemas.maintenance import (
+    MaintenanceCreate,
+    MaintenanceResponse,
+    MaintenanceStatus,
+)
+from app.shared.utils.mongodb import to_object_id
+from app.shared.utils.serialization import serialize_document
+
+
+class MaintenanceService:
+    def __init__(self):
+        self.repository = MaintenanceRepository()
+        self.vehicle_repository = VehicleRepository()
+
+    # Create
+    async def create_maintenance(
+        self,
+        user_id: str,
+        maintenance: MaintenanceCreate,
+    ) -> MaintenanceResponse:
+
+        vehicle = await self._get_owned_vehicle(
+            maintenance.vehicle_id,
+            user_id,
+        )
+
+        now = datetime.now(timezone.utc)
+
+        document = maintenance.model_dump(
+            exclude={"vehicle_id"},
+        )
+
+        document = self._serialize_update_data(document)
+
+        document["user_id"] = user_id
+        document["vehicle_id"] = vehicle["_id"]
+        document["status"] = MaintenanceStatus.COMPLETED
+        document["created_at"] = now
+        document["updated_at"] = now
+
+        created = await self.repository.insert(document)
+
+        serialized = serialize_document(created)
+
+        return MaintenanceResponse.model_validate(serialized)
+
+    # Private Helper
+    async def _get_owned_vehicle(
+        self,
+        vehicle_id: str,
+        user_id: str,
+    ) -> dict[str, Any]:
+
+        vehicle = await self.vehicle_repository.find_one(
+            {
+                "_id": to_object_id(vehicle_id),
+            }
+        )
+
+        if vehicle is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Vehicle not found.",
+            )
+
+        if str(vehicle["user_id"]) != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied.",
+            )
+
+        return vehicle
+
+    @staticmethod
+    def _serialize_update_data(update_data: dict) -> dict:
+        for key, value in update_data.items():
+            if isinstance(value, date) and not isinstance(value, datetime):
+                update_data[key] = datetime.combine(
+                    value,
+                    datetime.min.time(),
+                    tzinfo=timezone.utc,
+                )
+
+        return update_data

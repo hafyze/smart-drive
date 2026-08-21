@@ -8,6 +8,7 @@ from app.db.mongodb import connect_mongodb, disconnect_mongodb
 from app.routes.health import router as health_router
 from app.routes.vehicles import router as vehicle_router
 from app.routes.auth import router as auth_router
+from app.routes.maintenance import router as maintenance_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,3 +37,4 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(vehicle_router)
 app.include_router(auth_router)
+app.include_router(maintenance_router)
