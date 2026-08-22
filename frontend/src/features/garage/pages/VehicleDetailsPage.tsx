@@ -9,6 +9,8 @@ import { EditVehicleDialog } from "../components/EditVehicleDialog";
 
 import { useVehicle } from "../hooks/useVehicles";
 
+import { MaintenanceList } from "@/features/maintenance/components/MaintenanceList";
+
 interface VehicleDetailProps {
     label: string;
     value: string;
@@ -77,7 +79,7 @@ export default function VehicleDetailsPage() {
         );
     }
 
-    if (isError || ! vehicle) {
+    if (isError || !vehicle) {
         return (
             <div className="space-y-6">
                 <Button variant="ghost" onClick={() => navigate("/garage")}>
@@ -129,14 +131,14 @@ export default function VehicleDetailsPage() {
                 </div>
             </div>
 
-            <EditVehicleDialog vehicle={vehicle}/>
+            <EditVehicleDialog vehicle={vehicle} />
 
             {/* Vehicle Overview */}
             <Card>
                 <CardHeader className="flex flex-row items-start justify-between">
                     <div>
                         <h2 className="font-heading text-lg font-semibold">Vehicle Overview</h2>
-                    
+
                         <p className="text-sm text-muted-foreground">
                             Basic info about your vehicle
                         </p>
@@ -218,7 +220,25 @@ export default function VehicleDetailsPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Maintenance */}
+            <Card>
+                <CardHeader>
+                    <h2 className="font-heading text-lg font-semibold">
+                        Maintenance
+                    </h2>
+
+                    <p className="text-sm text-muted-foreground">
+                        Maintenance history and service records
+                    </p>
+                </CardHeader>
+
+                <CardContent>
+                    <MaintenanceList vehicleId={vehicle.id} />
+                </CardContent>
+            </Card>
         </div>
     )
+
 }
 

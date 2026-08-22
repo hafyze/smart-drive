@@ -69,7 +69,7 @@ class MaintenanceService:
                 user_id
             )
 
-            filter_query["vehicle_id"] = vehicle["id"]
+            filter_query["vehicle_id"] = vehicle["_id"]
 
         maintenance_records = await self.repository.find_many(
             filter_query
