@@ -44,3 +44,18 @@ async def get_all_maintenance(
         user_id=current_user["id"],
         vehicle_id=vehicle_id,
     )
+
+# Get one
+@router.get(
+    "/{maintenance_id}",
+    response_model=MaintenanceResponse,
+)
+async def get_maintenance(
+    maintenance_id: str,
+    current_user: dict = Depends(get_current_user),
+    service: MaintenanceService = Depends(get_maintenance_service),
+):
+    return await service.get_maintenance(
+        maintenance_id=maintenance_id,
+        user_id=current_user["id"],
+    )

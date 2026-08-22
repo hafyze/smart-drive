@@ -80,6 +80,15 @@ class MaintenanceService:
             for record in maintenance_records
         ]
 
+    #Get one
+    async def get_maintenance(
+            self, maintenance_id: str, user_id:str,
+    ) -> MaintenanceResponse:
+        maintenance = await self._get_owned_vehicle(maintenance_id, user_id)
+        serialized = serialize_document(maintenance)
+
+        return MaintenanceResponse.model_validate(serialized)
+        
     # Private Helper
     async def _get_owned_vehicle(
         self,
@@ -106,6 +115,33 @@ class MaintenanceService:
             )
 
         return vehicle
+
+    # Private Helper
+    async def _get_owned_maintenance(
+        self,
+        maintenance_id: str,
+        user_id: str,
+    ) -> dict[str, Any]:
+
+        maintenance = await self.repository.find_one(
+            {
+                "_id": to_object_id(maintenance_id),
+            }
+        )
+
+        if maintenance is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Maintenance record not found.",
+            )
+
+        if str(maintenance["user_id"]) != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied.",
+            )
+
+        return maintenance
 
     @staticmethod
     def _serialize_update_data(update_data: dict) -> dict:
