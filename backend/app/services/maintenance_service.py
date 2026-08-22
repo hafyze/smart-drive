@@ -9,7 +9,8 @@ from app.schemas.maintenance import (
     MaintenanceCreate,
     MaintenanceResponse,
     MaintenanceStatus,
-    MaintenanceListItem
+    MaintenanceListItem,
+    MaintenanceUpdate,
 )
 from app.shared.utils.mongodb import to_object_id
 from app.shared.utils.serialization import serialize_document
@@ -88,7 +89,55 @@ class MaintenanceService:
         serialized = serialize_document(maintenance)
 
         return MaintenanceResponse.model_validate(serialized)
-        
+
+    # Update
+    async def update_maintenance(
+        self,
+        maintenance_id: str,
+        user_id: str,
+        update: MaintenanceUpdate,
+    ) -> MaintenanceResponse:
+        maintenance = await self._get_owned_maintenance(
+            maintenance_id,
+            user_id
+        )
+
+        update_data = update.model_dump(
+            exclude_none=True,
+            exclude_unset=True,
+        )
+        update_data = self._serialize_update_data(update_data)
+        update_data["updated_at"] = datetime.now(timezone.utc)
+        updated = await self.repository.update(
+            {
+                "_id": maintenance["_id"]
+            },
+            update_data,
+        )
+        serialized = serialize_document(updated)
+
+        return MaintenanceResponse.model_validate(serialized)
+
+    # Delete
+    async def delete_maintenace(
+        self,
+        maintenace_id: str,
+        user_id: str,
+    ) -> dict:
+        maintenance = await self._get_owned_maintenance(
+            maintenace_id,
+            user_id
+        )
+
+        deleted = await self.repository.delete(
+            {
+                "_id": maintenance["_id"]
+            }
+        )
+        return{
+            "success": deleted
+        }
+
     # Private Helper
     async def _get_owned_vehicle(
         self,

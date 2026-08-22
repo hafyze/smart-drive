@@ -5,6 +5,7 @@ from app.schemas.maintenance import (
     MaintenanceCreate,
     MaintenanceResponse,
     MaintenanceListItem,
+    MaintenanceUpdate
 )
 from app.services.maintenance_service import MaintenanceService
 from app.dependencies.services_dependencies import get_maintenance_service
@@ -57,5 +58,36 @@ async def get_maintenance(
 ):
     return await service.get_maintenance(
         maintenance_id=maintenance_id,
+        user_id=current_user["id"],
+    )
+
+#Update 
+@router.put(
+    "/{maintenance_id}",
+    response_model=MaintenanceResponse,
+)
+async def update_maintenance(
+    maintenance_id: str,
+    maintenance: MaintenanceUpdate,
+    current_user: dict = Depends(get_current_user),
+    service: MaintenanceService = Depends(get_maintenance_service),
+):
+    return await service.update_maintenance(
+        maintenance_id=maintenance_id,
+        user_id=current_user["id"],
+        update=maintenance,
+    )
+
+# Delete
+@router.delete(
+    "/{maintenance_id}",
+)
+async def delete_maintenance(
+    maintenance_id: str,
+    current_user: dict = Depends(get_current_user),
+    service: MaintenanceService = Depends(get_maintenance_service),
+):
+    return await service.delete_maintenace(
+        maintenace_id=maintenance_id,
         user_id=current_user["id"],
     )
