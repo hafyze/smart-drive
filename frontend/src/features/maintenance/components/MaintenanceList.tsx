@@ -1,8 +1,33 @@
-import { Calendar, Gauge, Wrench } from "lucide-react";
+import {
+    Calendar,
+    Gauge,
+    Wrench,
+} from "lucide-react";
+
+import { Badge } from "@/shared/components/ui/badge";
+import { Card, CardContent } from "@/shared/components/ui/card";
+
 import { useMaintenance } from "../hooks/useMaintenance";
 
 interface MaintenanceListProps {
     vehicleId: string;
+}
+
+function formatEnum(value: string) {
+    return value
+        .toLowerCase()
+        .replaceAll("_", " ")
+        .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatDate(value: string) {
+    return new Intl.DateTimeFormat("en-MY", {
+        dateStyle: "medium",
+    }).format(new Date(value));
+}
+
+function formatStatus(status: string) {
+    return formatEnum(status);
 }
 
 export function MaintenanceList({
@@ -16,16 +41,23 @@ export function MaintenanceList({
 
     if (isLoading) {
         return (
-            <div className="py-8 text-center text-muted-foreground">
-                Loading maintenance records...
+            <div className="space-y-3">
+                <div className="h-32 animate-pulse rounded-lg bg-muted" />
+                <div className="h-32 animate-pulse rounded-lg bg-muted" />
             </div>
         );
     }
 
     if (isError) {
-        return(
-            <div className="py-8 text-center text-destructive">
-                Failed to load maintenancce records.
+        return (
+            <div className="rounded-lg border border-destructive/30 p-6 text-center">
+                <p className="font-medium">
+                    Unable to load maintenance records
+                </p>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Please try again later.
+                </p>
             </div>
         );
     }
@@ -33,11 +65,12 @@ export function MaintenanceList({
     if (!maintenanceRecords || maintenanceRecords.length === 0) {
         return (
             <div className="rounded-lg border border-dashed p-8 text-center">
-                <Wrench className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+                <Wrench className="mx-auto mb-3 size-8 text-muted-foreground" />
 
                 <h3 className="font-medium">
                     No maintenance records
                 </h3>
+
                 <p className="mt-1 text-sm text-muted-foreground">
                     Maintenance records for this vehicle will appear here.
                 </p>
@@ -46,81 +79,113 @@ export function MaintenanceList({
     }
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-4">
             {maintenanceRecords.map((record) => (
-                <div key={record.id} className="rounded-lg border p-4">
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
-                            <h3 className="font-medium">
-                                {record.description}
-                            </h3>
+                <Card key={record.id}>
+                    <CardContent className="space-y-5 p-5">
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-1">
+                                <h3 className="font-semibold">
+                                    {formatEnum(record.type)}
+                                </h3>
 
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                {record.type.replaceAll("_", " ")}
-                            </p>
-                        </div>
-                        <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
-                            {record.status}
-                        </span>
-                    </div>
-                    {/* Service Date */}
-                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                        <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-muted-foreground">
-                                    Service date
+                                <p className="text-sm text-muted-foreground">
+                                    {record.description}
                                 </p>
-                                <p>{record.service_date}</p>
                             </div>
-                        </div>
-                        {/* Mileage */}
-                        <div className="flex items-center gap-2 text-sm">
-                            <Gauge className="h-4 w-4 text-muted-foreground" />
-                        
-                            <div>
-                                <p className="text-muted-foreground"> Mileage</p>
-                                <p>{record.mileage_at_service.toLocaleString()}</p>
-                            </div>
+
+                            <Badge>
+                                {formatStatus(record.status)}
+                            </Badge>
                         </div>
 
-                        {/* Cost */}
-                        <div>
-                            <Wrench className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-muted-foreground">Cost</p>
-                                <p>{record.cost !== null
+                        {/* Service Information */}
+                        <div className="grid gap-4 sm:grid-cols-3">
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                    Service Date
+                                </p>
+
+                                <div className="flex items-center gap-2 text-sm font-medium">
+                                    <Calendar className="size-4 text-muted-foreground" />
+
+                                    <span>
+                                        {formatDate(record.service_date)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                    Mileage
+                                </p>
+
+                                <div className="flex items-center gap-2 text-sm font-medium">
+                                    <Gauge className="size-4 text-muted-foreground" />
+
+                                    <span>
+                                        {record.mileage_at_service.toLocaleString()} km
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">
+                                    Cost
+                                </p>
+
+                                <p className="text-sm font-medium">
+                                    {record.cost !== null
                                         ? `RM ${record.cost.toFixed(2)}`
-                                        : "Not specified"
-                                    }
+                                        : "Not provided"}
                                 </p>
                             </div>
                         </div>
-                    </div>
 
-                    {(record.next_due_date !== null || record.next_due_mileage != null) && (
-                        <div className="mt-4 border-t pt-3 text-sm">
-                            <p className="text-muted-foreground">
-                                Next service
-                            </p>
+                        {/* Workshop */}
+                        {record.workshop && (
+                            <div className="border-t pt-4">
+                                <p className="text-xs text-muted-foreground">
+                                    Workshop
+                                </p>
 
-                            <div className="mt-1 flex flex-wrap gap-4">
-                                {record.next_due_date !== null && (
+                                <div className="mt-1 flex items-center gap-2 text-sm font-medium">
+                                    <Wrench className="size-4 text-muted-foreground" />
+
                                     <span>
-                                        {record.next_due_date}
+                                        {record.workshop}
                                     </span>
-                                )}
-
-                                {record.next_due_mileage !== null && (
-                                    <span>
-                                        {record.next_due_mileage.toLocaleString()} km
-                                    </span>
-                                )}
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+
+                        {/* Next Service */}
+                        {(record.next_due_date !== null ||
+                            record.next_due_mileage !== null) && (
+                            <div className="border-t pt-4">
+                                <p className="text-xs text-muted-foreground">
+                                    Next Service
+                                </p>
+
+                                <div className="mt-1 flex flex-wrap gap-4 text-sm font-medium">
+                                    {record.next_due_date !== null && (
+                                        <span>
+                                            {formatDate(record.next_due_date)}
+                                        </span>
+                                    )}
+
+                                    {record.next_due_mileage !== null && (
+                                        <span>
+                                            {record.next_due_mileage.toLocaleString()} km
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             ))}
         </div>
     );
-} 
+}

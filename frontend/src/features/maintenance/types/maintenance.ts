@@ -58,6 +58,7 @@ export interface MaintenanceListItem {
     next_due_mileage: number | null;
 
     cost: number | null;
+    workshop: string | null;
 
     status: MaintenanceStatus;
 }
