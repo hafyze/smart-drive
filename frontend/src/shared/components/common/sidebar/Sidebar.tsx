@@ -8,7 +8,7 @@ import { SidebarNav } from "./SidebarNav"
 
 export function Sidebar() {
     return (
-        <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
+        <aside className="hidden sticky top-0 hideen h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
             <SidebarBrand />
 
             <SidebarNav items={OWNER_NAVIGATION} />

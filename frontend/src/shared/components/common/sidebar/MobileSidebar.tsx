@@ -28,11 +28,16 @@ export function MobileSidebar() {
                 <Menu className="size-5" />
             </SheetTrigger>
 
-            <SheetContent>
-                <div>
+            <SheetContent
+                side="left"
+                className="w-64 p-0"
+            >
+                <div className="flex h-full flex-col">
                     <SidebarBrand />
 
-                    <SidebarNav items={OWNER_NAVIGATION} />
+                    <div className="flex-1 overflow-y-auto">
+                        <SidebarNav items={OWNER_NAVIGATION} />
+                    </div>
 
                     <SidebarFooter />
                 </div>
