@@ -33,6 +33,10 @@ class MaintenanceService:
             user_id,
         )
 
+        print("vehicle:", vehicle)
+        print("vehicle _id:", vehicle["_id"])
+        print("vehicle _id type:", type(vehicle["_id"]))
+
         now = datetime.now(timezone.utc)
 
         document = maintenance.model_dump(
@@ -42,7 +46,7 @@ class MaintenanceService:
         document = self._serialize_update_data(document)
 
         document["user_id"] = user_id
-        document["vehicle_id"] = vehicle["_id"]
+        document["vehicle_id"] = str(vehicle["_id"])
         document["status"] = MaintenanceStatus.COMPLETED
         document["created_at"] = now
         document["updated_at"] = now
