@@ -58,4 +58,4 @@ export const maintenanceSchema = z.object({
         .optional(),
 });
 
-export type MaintenaceFormValues = z.infer<typeof maintenanceSchema>
+export type MaintenanceFormValues = z.infer<typeof maintenanceSchema>
