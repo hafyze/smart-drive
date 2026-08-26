@@ -10,6 +10,7 @@ import { EditVehicleDialog } from "../components/EditVehicleDialog";
 import { useVehicle } from "../hooks/useVehicles";
 
 import { MaintenanceList } from "@/features/maintenance/components/MaintenanceList";
+import { AddMaintenanceDialog } from "@/features/maintenance/components/AddMaintenanceDialog";
 
 interface VehicleDetailProps {
     label: string;
@@ -223,19 +224,22 @@ export default function VehicleDetailsPage() {
 
             {/* Maintenance */}
             <Card>
-                <CardHeader>
-                    <h2 className="font-heading text-lg font-semibold">
-                        Maintenance
-                    </h2>
+                <div>
+                    <CardHeader>
+                        <h2 className="font-heading text-lg font-semibold">
+                            Maintenance
+                        </h2>
 
-                    <p className="text-sm text-muted-foreground">
-                        Maintenance history and service records
-                    </p>
-                </CardHeader>
+                        <p className="text-sm text-muted-foreground">
+                            Maintenance history and service records
+                        </p>
+                    </CardHeader>
 
-                <CardContent>
-                    <MaintenanceList vehicleId={vehicle.id} />
-                </CardContent>
+                    <CardContent>
+                        <MaintenanceList vehicleId={vehicle.id} />
+                    </CardContent>
+                </div>
+                <AddMaintenanceDialog vehicleId={vehicle.id} />
             </Card>
         </div>
     )
