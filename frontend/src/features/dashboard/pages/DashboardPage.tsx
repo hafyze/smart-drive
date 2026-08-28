@@ -6,6 +6,7 @@ import { useAllMaintenance } from "@/features/maintenance/hooks/useMaintenance";
 import { VehicleOverviewCard } from "../components/VehicleOverviewCard";
 import { CarFront } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
+import { MaintenanceSummary } from "../components/MaintenanceSummary";
 
 export default function DashboardPage() {
     const navigate = useNavigate();
@@ -100,6 +101,7 @@ export default function DashboardPage() {
                 </p>
             </div>
 
+            {/* Garage w Cars */}
             {vehicles && vehicles.length > 0 && (
                 <div>
                     <div className="mb-4">
@@ -123,6 +125,15 @@ export default function DashboardPage() {
                 </div>
             )}
 
+            {/* Maintenance Card */}
+            {vehicles && vehicles.length > 0 && maintenance && (
+                <MaintenanceSummary 
+                    maintenance={maintenance}
+                    vehicles={vehicles}
+                />
+            )}
+
+            {/* Empty Garage */}
             {vehicles && vehicles.length === 0 && (
                 <Card>
                     <CardContent className="flex min-h-48 items-center justify-center p-6">
