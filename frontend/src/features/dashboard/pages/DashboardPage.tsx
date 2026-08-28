@@ -1,9 +1,14 @@
 import { Card, CardContent } from "@/shared/components/ui/card";
+import { useNavigate } from "react-router-dom";
 
 import { useVehicles } from "@/features/garage/hooks/useVehicles";
 import { useAllMaintenance } from "@/features/maintenance/hooks/useMaintenance";
+import { VehicleOverviewCard } from "../components/VehicleOverviewCard";
+import { CarFront } from "lucide-react";
+import { Button } from "@/shared/components/ui/button";
 
 export default function DashboardPage() {
+    const navigate = useNavigate();
     const {
         data: vehicles,
         isLoading: isVehiclesLoading,
@@ -19,7 +24,7 @@ export default function DashboardPage() {
     } = useAllMaintenance();
 
     const isLoading = isVehiclesLoading || isMaintenanceLoading;
-    const isError = isVehiclesLoading || isMaintenanceError;
+    const isError = isVehiclesError || isMaintenanceError;
 
     if (isLoading) {
         return (
@@ -72,8 +77,8 @@ export default function DashboardPage() {
                                 {vehiclesError instanceof Error
                                     ? vehiclesError.message
                                     : maintenanceError instanceof Error
-                                        ?   maintenanceError.message
-                                        :   "Something went wrong while loading your dashboard."}
+                                        ? maintenanceError.message
+                                        : "Something went wrong while loading your dashboard."}
                             </p>
                         </div>
                     </CardContent>
@@ -95,31 +100,54 @@ export default function DashboardPage() {
                 </p>
             </div>
 
-            {/* Temp Data Verification */}
-            <div className="grid gap-4 sm:grid-cols-2">
-                <Card>
-                    <CardContent className="p-6">
+            {vehicles && vehicles.length > 0 && (
+                <div>
+                    <div className="mb-4">
+                        <h2 className="font-heading text-lg font-semibold">
+                            Your Vehicles
+                        </h2>
+
                         <p className="text-sm text-muted-foreground">
-                            Vehicles
+                            Vehicles currently in your garage
                         </p>
-                        <p className="mt-1 text-2xl font-semibold">
-                            {vehicles?.length}
-                        </p>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        {vehicles.map((vehicle) => (
+                            <VehicleOverviewCard
+                                key={vehicle.id}
+                                vehicle={vehicle}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {vehicles && vehicles.length === 0 && (
+                <Card>
+                    <CardContent className="flex min-h-48 items-center justify-center p-6">
+                        <div className="max-w-md text-center">
+                            <CarFront className="mx-auto mb-3 size-10 text-muted-foreground" />
+
+                            <h2 className="font-heading text-lg font-semibold">
+                                Your garage is empty
+                            </h2>
+
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Add your first vehicle to start tracking its
+                                information and maintenance.
+                            </p>
+
+                            <Button
+                                className="mt-4"
+                                onClick={() => navigate("/garage")}
+                            >
+                                Go to Garage
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
-
-                <Card>
-                    <CardContent className="p-6">
-                        <p className="text-sm text-muted-foreground">
-                            Maintenance Records
-                        </p>
-
-                        <p className="mt-1 text-2xl font-semibold">
-                            {maintenance?.length ?? 0}
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
+            )}
         </div>
     )
 }

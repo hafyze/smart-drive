@@ -7,7 +7,7 @@ import { Badge } from "@/shared/components/ui/badge";
 
 import { EditVehicleDialog } from "../components/EditVehicleDialog";
 
-import { useVehicles } from "../hooks/useVehicles";
+import { useVehicle } from "../hooks/useVehicles";
 
 import { MaintenanceList } from "@/features/maintenance/components/MaintenanceList";
 import { AddMaintenanceDialog } from "@/features/maintenance/components/AddMaintenanceDialog";
@@ -61,7 +61,7 @@ export default function VehicleDetailsPage() {
         isLoading,
         isError,
         error,
-    } = useVehicles(vehicleId ?? "");
+    } = useVehicle(vehicleId ?? "");
 
     if (isLoading) {
         return (
