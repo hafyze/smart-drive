@@ -144,6 +144,7 @@ class MaintenanceListItem(BaseModel):
     next_due_mileage: int | None = None
     cost: float | None = None
     workshop: str | None = None
+    notes: str | None = None
     status: MaintenanceStatus
 
     model_config = ConfigDict(from_attributes=True)

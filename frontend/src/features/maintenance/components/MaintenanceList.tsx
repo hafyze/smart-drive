@@ -8,6 +8,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Card, CardContent } from "@/shared/components/ui/card";
 
 import { useMaintenance } from "../hooks/useMaintenance";
+import { EditMaintenanceDialog } from "./EditMaintenanceDialog";
 
 interface MaintenanceListProps {
     vehicleId: string;
@@ -98,6 +99,14 @@ export function MaintenanceList({
                             <Badge>
                                 {formatStatus(record.status)}
                             </Badge>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                            <Badge>
+                                {formatStatus(record.status)}
+                            </Badge>
+
+                            <EditMaintenanceDialog maintenance={record}/>
                         </div>
 
                         {/* Service Information */}

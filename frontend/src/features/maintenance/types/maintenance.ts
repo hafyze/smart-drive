@@ -59,6 +59,7 @@ export interface MaintenanceListItem {
 
     cost: number | null;
     workshop: string | null;
+    notes: string | null;
 
     status: MaintenanceStatus;
 }
