@@ -137,7 +137,7 @@ class MaintenanceListItem(BaseModel):
     id: str
     vehicle_id: str
     type: MaintenanceType
-    description: str
+    description: str | None = None
     service_date: date
     mileage_at_service: int
     next_due_date: date | None = None

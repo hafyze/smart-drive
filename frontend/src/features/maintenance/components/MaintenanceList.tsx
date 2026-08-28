@@ -3,7 +3,6 @@ import {
     ChevronDown,
     ChevronUp,
     Gauge,
-    Pencil,
     Wrench,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -15,6 +14,7 @@ import { Card, CardContent } from "@/shared/components/ui/card";
 import { useMaintenance } from "../hooks/useMaintenance";
 import { EditMaintenanceDialog } from "./EditMaintenanceDialog";
 import type { MaintenanceListItem } from "../types/maintenance";
+import { DeleteMaintenanceDialog } from "./DeleteMaintenanceDialog";
 
 interface MaintenanceListProps {
     vehicleId: string;
@@ -162,10 +162,10 @@ export function MaintenanceList({
                 )
                     ? "COMPLETED"
                     : group.records.some(
-                          (record) => record.status === "OVERDUE",
-                      )
-                    ? "OVERDUE"
-                    : "UPCOMING";
+                        (record) => record.status === "OVERDUE",
+                    )
+                        ? "OVERDUE"
+                        : "UPCOMING";
 
                 return (
                     <Card key={group.key}>
@@ -179,8 +179,8 @@ export function MaintenanceList({
                                                 {group.records.length > 1
                                                     ? "Service Visit"
                                                     : formatEnum(
-                                                          group.records[0].type,
-                                                      )}
+                                                        group.records[0].type,
+                                                    )}
                                             </h3>
 
                                             <Badge>
@@ -291,81 +291,75 @@ export function MaintenanceList({
                                         {group.records.map((record) => (
                                             <div
                                                 key={record.id}
-                                                className="space-y-3"
+                                                className="space-y-4 border-b pb-5 last:border-b-0 last:pb-0"
                                             >
+                                                {/* Service Header */}
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div>
                                                         <h4 className="font-medium">
-                                                            {formatEnum(
-                                                                record.type,
-                                                            )}
+                                                            {formatEnum(record.type)}
                                                         </h4>
 
                                                         <p className="text-sm text-muted-foreground">
-                                                            {
-                                                                record.description
-                                                            }
+                                                            {record.description}
                                                         </p>
                                                     </div>
 
                                                     {record.cost !== null && (
                                                         <p className="shrink-0 text-sm font-medium">
-                                                            RM{" "}
-                                                            {record.cost.toFixed(
-                                                                2,
-                                                            )}
+                                                            RM {record.cost.toFixed(2)}
                                                         </p>
                                                     )}
                                                 </div>
 
+                                                {/* Next Service */}
                                                 {(record.next_due_date !== null ||
-                                                    record.next_due_mileage !==
-                                                        null) && (
-                                                    <div className="rounded-md border bg-background p-3">
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Next Service
-                                                        </p>
+                                                    record.next_due_mileage !== null) && (
+                                                        <div className="space-y-1">
+                                                            <p className="text-xs font-medium text-muted-foreground">
+                                                                Next Service
+                                                            </p>
 
-                                                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium">
-                                                            {record.next_due_date !==
-                                                                null && (
-                                                                <span>
-                                                                    {formatDate(
-                                                                        record.next_due_date,
-                                                                    )}
-                                                                </span>
-                                                            )}
+                                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                                                                {record.next_due_date !== null && (
+                                                                    <span>
+                                                                        {formatDate(record.next_due_date)}
+                                                                    </span>
+                                                                )}
 
-                                                            {record.next_due_mileage !==
-                                                                null && (
-                                                                <span>
-                                                                    {record.next_due_mileage.toLocaleString()}{" "}
-                                                                    km
-                                                                </span>
-                                                            )}
+                                                                {record.next_due_mileage !== null && (
+                                                                    <span>
+                                                                        {record.next_due_mileage.toLocaleString()}{" "}
+                                                                        km
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )}
+                                                    )}
 
+                                                {/* Notes */}
                                                 {record.notes && (
-                                                    <div>
-                                                        <p className="text-xs text-muted-foreground">
+                                                    <div className="space-y-1">
+                                                        <p className="text-xs font-medium text-muted-foreground">
                                                             Notes
                                                         </p>
 
-                                                        <p className="mt-1 whitespace-pre-wrap text-sm">
+                                                        <p className="whitespace-pre-wrap text-sm text-muted-foreground">
                                                             {record.notes}
                                                         </p>
                                                     </div>
                                                 )}
 
-                                                {group.records.length > 1 && (
-                                                    <div className="flex justify-end">
-                                                        <EditMaintenanceDialog
-                                                            maintenance={record}
-                                                        />
-                                                    </div>
-                                                )}
+                                                {/* Actions */}
+                                                <div className="flex justify-end gap-1">
+                                                    <EditMaintenanceDialog
+                                                        maintenance={record}
+                                                    />
+
+                                                    <DeleteMaintenanceDialog
+                                                        maintenance={record}
+                                                    />
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

@@ -26,7 +26,7 @@ export interface Maintenance {
     vehicle_id: string;
 
     type: MaintenanceType;
-    description: string;
+    description: string | null;
 
     service_date: string;
     mileage_at_service: number;
@@ -49,7 +49,7 @@ export interface MaintenanceListItem {
     vehicle_id: string;
 
     type: MaintenanceType;
-    description: string;
+    description: string | null;
 
     service_date: string;
     mileage_at_service: number;
@@ -68,7 +68,7 @@ export interface CreateMaintenancePayload {
     vehicle_id: string;
 
     type: MaintenanceType;
-    description: string;
+    description: string | null;
 
     service_date: string;
     mileage_at_service: number;
@@ -83,7 +83,7 @@ export interface CreateMaintenancePayload {
 
 export interface UpdateMaintenancePayload {
     type?: MaintenanceType;
-    description?: string;
+    description?: string | null;
 
     service_date?: string;
     mileage_at_service?: number;
