@@ -115,6 +115,35 @@ class MaintenanceService:
             exclude_unset=True,
         )
         update_data = self._serialize_update_data(update_data)
+        maintenance_type = update.type or maintenance["type"]
+
+        next_due_date = (
+            update.next_due_date
+            if update.next_due_date is not None
+            else maintenance.get("next_due_date")
+        )
+
+        next_due_mileage = (
+            update.next_due_mileage
+            if update.next_due_mileage is not None
+            else maintenance.get("next_due_mileage")
+        )
+
+        # Get the current vehicle mileage because the maintenance
+        # status depends on the vehicle's current mileage.
+        vehicle = await self._get_owned_vehicle(
+            str(maintenance["vehicle_id"]),
+            user_id,
+        )
+
+        maintenance_status = calculate_maintenance_status(
+            maintenance_type=maintenance_type,
+            next_due_date=next_due_date,
+            next_due_mileage=next_due_mileage,
+            current_mileage=vehicle["current_mileage"],
+        )
+
+        update_data["status"] = maintenance_status
         update_data["updated_at"] = datetime.now(timezone.utc)
         updated = await self.repository.update(
             {
