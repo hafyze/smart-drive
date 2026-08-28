@@ -14,6 +14,7 @@ from app.schemas.maintenance import (
 )
 from app.shared.utils.mongodb import to_object_id
 from app.shared.utils.serialization import serialize_document
+from app.services.maintenance_status import calculate_maintenance_status
 
 
 class MaintenanceService:
@@ -33,10 +34,6 @@ class MaintenanceService:
             user_id,
         )
 
-        print("vehicle:", vehicle)
-        print("vehicle _id:", vehicle["_id"])
-        print("vehicle _id type:", type(vehicle["_id"]))
-
         now = datetime.now(timezone.utc)
 
         document = maintenance.model_dump(
@@ -45,9 +42,16 @@ class MaintenanceService:
 
         document = self._serialize_update_data(document)
 
+        status = calculate_maintenance_status(
+            maintenance_type=maintenance.type,
+            next_due_date=maintenance.next_due_date,
+            next_due_mileage=maintenance.next_due_mileage,
+            current_mileage=vehicle["current_mileage"],
+        )
+
         document["user_id"] = user_id
         document["vehicle_id"] = vehicle["_id"]
-        document["status"] = MaintenanceStatus.COMPLETED
+        document["status"] = status
         document["created_at"] = now
         document["updated_at"] = now
 
