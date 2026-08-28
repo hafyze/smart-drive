@@ -35,9 +35,8 @@ class MaintenanceStatus(str, Enum):
 class MaintenanceBase(BaseModel):
     type: MaintenanceType
 
-    description: str = Field(
-        ...,
-        min_length=1,
+    description: str | None = Field(
+        default=None,
         max_length=500,
     )
 
@@ -84,7 +83,6 @@ class MaintenanceUpdate(BaseModel):
 
     description: str | None = Field(
         default=None,
-        min_length=1,
         max_length=500,
     )
 

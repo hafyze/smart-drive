@@ -46,7 +46,7 @@ class MaintenanceService:
         document = self._serialize_update_data(document)
 
         document["user_id"] = user_id
-        document["vehicle_id"] = str(vehicle["_id"])
+        document["vehicle_id"] = vehicle["_id"]
         document["status"] = MaintenanceStatus.COMPLETED
         document["created_at"] = now
         document["updated_at"] = now
@@ -123,7 +123,7 @@ class MaintenanceService:
         return MaintenanceResponse.model_validate(serialized)
 
     # Delete
-    async def delete_maintenace(
+    async def delete_maintenance(
         self,
         maintenace_id: str,
         user_id: str,

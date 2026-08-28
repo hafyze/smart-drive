@@ -66,6 +66,7 @@ export function AddMaintenanceDialog({
 
                 ...values,
 
+                description: values.description || null,
                 next_due_date: values.next_due_date || null,
                 next_due_mileage: values.next_due_mileage ?? null,
                 cost: values.cost ?? null,
@@ -289,7 +290,7 @@ export function AddMaintenanceDialog({
                                     label="Next Due Date" 
                                     error={form.formState.errors.next_due_date?.message}
                                 >
-                                    <Input type="number" {...form.register("next_due_date")}/>
+                                    <Input type="date" {...form.register("next_due_date")}/>
                                 </FormField>
 
                                 <FormField 
@@ -299,7 +300,11 @@ export function AddMaintenanceDialog({
                                     <Input 
                                         type="number" 
                                         min={0}
-                                        {...form.register("next_due_mileage"), {valueAsNumber: true}}/>
+                                        {...form.register("next_due_mileage", {
+                                            setValueAs: (value) =>
+                                                value === "" ? undefined : Number(value),
+                                        })}
+                                    />
                                 </FormField>
                             </div>
                         </section>
@@ -320,7 +325,10 @@ export function AddMaintenanceDialog({
                                         type="number"
                                         min={0}
                                         step={0.01}
-                                        {...form.register("cost"), {valueAsNumber: true}}
+                                        {...form.register("cost", {
+                                            setValueAs: (value) =>
+                                                value === "" ? undefined : Number(value),
+                                        })}
                                     />
                                 </FormField>
 

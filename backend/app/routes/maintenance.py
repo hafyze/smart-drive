@@ -87,7 +87,7 @@ async def delete_maintenance(
     current_user: dict = Depends(get_current_user),
     service: MaintenanceService = Depends(get_maintenance_service),
 ):
-    return await service.delete_maintenace(
+    return await service.delete_maintenance(
         maintenace_id=maintenance_id,
         user_id=current_user["id"],
     )

@@ -52,7 +52,7 @@ export function EditMaintenanceDialog({
         resolver: zodResolver(maintenanceSchema),
         defaultValues: {
             type: maintenance.type,
-            description: maintenance.description,
+            description: maintenance.description ?? "",
             service_date: maintenance.service_date,
             mileage_at_service: maintenance.mileage_at_service,
             next_due_date: maintenance.next_due_date ?? "",
@@ -67,7 +67,7 @@ export function EditMaintenanceDialog({
         if (open) {
             form.reset({
                 type: maintenance.type,
-                description: maintenance.description,
+                description: maintenance.description ?? "",
                 service_date: maintenance.service_date,
                 mileage_at_service: maintenance.mileage_at_service,
                 next_due_date: maintenance.next_due_date ?? "",
