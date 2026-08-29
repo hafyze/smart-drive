@@ -74,7 +74,7 @@ class MaintenanceService:
         if vehicle_id is not None:
             vehicle = await self._get_owned_vehicle(
                 vehicle_id,
-                user_id
+                user_id,
             )
 
             filter_query["vehicle_id"] = vehicle["_id"]
@@ -82,19 +82,86 @@ class MaintenanceService:
         maintenance_records = await self.repository.find_many(
             filter_query
         )
-        return [
-            MaintenanceListItem.model_validate(
-                serialize_document(record)
-            )
-            for record in maintenance_records
-        ]
 
+        vehicles = await self.vehicle_repository.find_many(
+            {
+                "user_id": user_id,
+            }
+        )
+
+        vehicle_mileage = {
+            str(vehicle["_id"]): vehicle["current_mileage"]
+            for vehicle in vehicles
+        }
+
+        result = []
+
+        for record in maintenance_records:
+            current_mileage = vehicle_mileage.get(
+                str(record["vehicle_id"])
+            )
+
+            if current_mileage is None:
+                # This should normally never happen because
+                # maintenance records belong to the user's vehicles.
+                continue
+
+            next_due_date = record.get("next_due_date")
+
+            maintenance_status = calculate_maintenance_status(
+                maintenance_type=record["type"],
+                next_due_date=(
+                    next_due_date.date()
+                    if next_due_date
+                    else None
+                ),
+                next_due_mileage=record.get("next_due_mileage"),
+                current_mileage=current_mileage,
+            )
+
+            serialized = serialize_document(record)
+
+            serialized["status"] = maintenance_status
+
+            result.append(
+                MaintenanceListItem.model_validate(serialized)
+            )
+
+        return result
+    
     #Get one
     async def get_maintenance(
-            self, maintenance_id: str, user_id:str,
+        self,
+        maintenance_id: str,
+        user_id: str,
     ) -> MaintenanceResponse:
-        maintenance = await self._get_owned_vehicle(maintenance_id, user_id)
+
+        maintenance = await self._get_owned_maintenance(
+            maintenance_id,
+            user_id,
+        )
+
+        vehicle = await self._get_owned_vehicle(
+            str(maintenance["vehicle_id"]),
+            user_id,
+        )
+
+        next_due_date = maintenance.get("next_due_date")
+
+        maintenance_status = calculate_maintenance_status(
+            maintenance_type=maintenance["type"],
+            next_due_date=(
+                next_due_date.date()
+                if next_due_date
+                else None
+            ),
+            next_due_mileage=maintenance.get("next_due_mileage"),
+            current_mileage=vehicle["current_mileage"],
+        )
+
         serialized = serialize_document(maintenance)
+
+        serialized["status"] = maintenance_status
 
         return MaintenanceResponse.model_validate(serialized)
 
