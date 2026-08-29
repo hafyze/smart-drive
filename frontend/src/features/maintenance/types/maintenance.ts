@@ -16,7 +16,9 @@ export type MaintenanceType =
     | "OTHER";
 
 export type MaintenanceStatus =
-    | "COMPLETED"
+    | "COMPLETED";
+
+export type MaintenanceScheduleStatus =
     | "UPCOMING"
     | "OVERDUE";
 
@@ -39,6 +41,7 @@ export interface Maintenance {
     notes: string | null;
 
     status: MaintenanceStatus;
+    schedule_status: MaintenanceScheduleStatus | null;
 
     created_at: string;
     updated_at: string;
@@ -62,6 +65,7 @@ export interface MaintenanceListItem {
     notes: string | null;
 
     status: MaintenanceStatus;
+    schedule_status: MaintenanceScheduleStatus | null;
 }
 
 export interface CreateMaintenancePayload {

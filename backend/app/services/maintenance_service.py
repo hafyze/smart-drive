@@ -42,7 +42,7 @@ class MaintenanceService:
 
         document = self._serialize_update_data(document)
 
-        status = calculate_maintenance_status(
+        schedule_status = calculate_maintenance_status(
             maintenance_type=maintenance.type,
             next_due_date=maintenance.next_due_date,
             next_due_mileage=maintenance.next_due_mileage,
@@ -51,7 +51,8 @@ class MaintenanceService:
 
         document["user_id"] = user_id
         document["vehicle_id"] = vehicle["_id"]
-        document["status"] = status
+        document["status"] = MaintenanceStatus.COMPLETED
+        document["schedule_status"] = schedule_status
         document["created_at"] = now
         document["updated_at"] = now
 
@@ -108,7 +109,7 @@ class MaintenanceService:
 
             next_due_date = record.get("next_due_date")
 
-            maintenance_status = calculate_maintenance_status(
+            schedule_status = calculate_maintenance_status(
                 maintenance_type=record["type"],
                 next_due_date=(
                     next_due_date.date()
@@ -120,8 +121,8 @@ class MaintenanceService:
             )
 
             serialized = serialize_document(record)
-
-            serialized["status"] = maintenance_status
+            serialized["status"] = MaintenanceStatus.COMPLETED
+            serialized["schedule_status"] = schedule_status
 
             result.append(
                 MaintenanceListItem.model_validate(serialized)
@@ -203,14 +204,15 @@ class MaintenanceService:
             user_id,
         )
 
-        maintenance_status = calculate_maintenance_status(
+        schedule_status = calculate_maintenance_status(
             maintenance_type=maintenance_type,
             next_due_date=next_due_date,
             next_due_mileage=next_due_mileage,
             current_mileage=vehicle["current_mileage"],
         )
 
-        update_data["status"] = maintenance_status
+        update_data["status"] = MaintenanceStatus.COMPLETED
+        update_data["schedule_status"] = schedule_status
         update_data["updated_at"] = datetime.now(timezone.utc)
         updated = await self.repository.update(
             {

@@ -162,7 +162,7 @@ export function MaintenanceList({
                 )
                     ? "COMPLETED"
                     : group.records.some(
-                        (record) => record.status === "OVERDUE",
+                        (record) => record.schedule_status === "OVERDUE",
                     )
                         ? "OVERDUE"
                         : "UPCOMING";
@@ -299,6 +299,12 @@ export function MaintenanceList({
                                                         <h4 className="font-medium">
                                                             {formatEnum(record.type)}
                                                         </h4>
+
+                                                        {record.schedule_status && (
+                                                            <Badge>
+                                                                {formatStatus(record.schedule_status)}
+                                                            </Badge>
+                                                        )}
 
                                                         <p className="text-sm text-muted-foreground">
                                                             {record.description}

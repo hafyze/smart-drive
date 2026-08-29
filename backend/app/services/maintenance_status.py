@@ -1,6 +1,7 @@
 from datetime import date
 
 from app.schemas.maintenance import (
+    MaintenanceScheduleStatus,
     MaintenanceStatus,
     MaintenanceType
 )
@@ -34,7 +35,7 @@ def calculate_maintenance_status(
     next_due_mileage: int | None,
     current_mileage: int,
     today: date | None = None,
-) -> MaintenanceStatus:
+) -> MaintenanceScheduleStatus | None:
     
     """
     Determine the current status of a maintenance schedule.
@@ -47,28 +48,28 @@ def calculate_maintenance_status(
     - OTHER -> use whichever due value is provided
     """
     if next_due_date is None and next_due_mileage is None:
-        return MaintenanceStatus.COMPLETED
+        return None
 
     today = today or date.today()
 
     # Engine oil can be either due type
     if maintenance_type == MaintenanceType.ENGINE_OIL:
         if(next_due_date is not None and today >= next_due_date):
-            return MaintenanceStatus.OVERDUE
+            return MaintenanceScheduleStatus.OVERDUE
         if(next_due_mileage is not None and current_mileage >= next_due_mileage):
-            return MaintenanceStatus.OVERDUE
-        return MaintenanceStatus.UPCOMING
+            return MaintenanceScheduleStatus.OVERDUE
+        return MaintenanceScheduleStatus.UPCOMING
 
     # Mileage based maintenance
     if maintenance_type in MILEAGE_BASED_TYPES:
         if (next_due_mileage is not None and current_mileage >= next_due_mileage):
-            return MaintenanceStatus.OVERDUE
-        return MaintenanceStatus.UPCOMING
+            return MaintenanceScheduleStatus.OVERDUE
+        return MaintenanceScheduleStatus.UPCOMING
 
     if maintenance_type in DATE_BASED_TYPES:
         if(next_due_date is not None and today >= next_due_date):
-            return MaintenanceStatus.OVERDUE
-        return MaintenanceStatus.UPCOMING
+            return MaintenanceScheduleStatus.OVERDUE
+        return MaintenanceScheduleStatus.UPCOMING
 
     # OTHER:
     # If no specific rule exists, use whichever interval
@@ -77,12 +78,12 @@ def calculate_maintenance_status(
         next_due_date is not None
         and today >= next_due_date
     ):
-        return MaintenanceStatus.OVERDUE
+        return MaintenanceScheduleStatus.OVERDUE
 
     if (
         next_due_mileage is not None
         and current_mileage >= next_due_mileage
     ):
-        return MaintenanceStatus.OVERDUE
+        return MaintenanceScheduleStatus.OVERDUE
 
-    return MaintenanceStatus.UPCOMING
+    return MaintenanceScheduleStatus.UPCOMING

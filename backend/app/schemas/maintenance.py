@@ -26,6 +26,8 @@ class MaintenanceType(str, Enum):
 
 class MaintenanceStatus(str, Enum):
     COMPLETED = "COMPLETED"
+
+class MaintenanceScheduleStatus(str, Enum):
     UPCOMING = "UPCOMING"
     OVERDUE = "OVERDUE"
 
@@ -123,6 +125,7 @@ class MaintenanceResponse(MaintenanceBase):
     user_id: str
     vehicle_id: str
     status: MaintenanceStatus
+    schedule_status: MaintenanceScheduleStatus | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -144,5 +147,6 @@ class MaintenanceListItem(BaseModel):
     workshop: str | None = None
     notes: str | None = None
     status: MaintenanceStatus
+    schedule_status: MaintenanceScheduleStatus | None = None
 
     model_config = ConfigDict(from_attributes=True)
