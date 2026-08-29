@@ -149,7 +149,7 @@ class MaintenanceService:
 
         next_due_date = maintenance.get("next_due_date")
 
-        maintenance_status = calculate_maintenance_status(
+        schedule_status = calculate_maintenance_status(
             maintenance_type=maintenance["type"],
             next_due_date=(
                 next_due_date.date()
@@ -162,7 +162,8 @@ class MaintenanceService:
 
         serialized = serialize_document(maintenance)
 
-        serialized["status"] = maintenance_status
+        serialized["status"] = MaintenanceStatus.COMPLETED
+        serialized["schedule_status"] = schedule_status
 
         return MaintenanceResponse.model_validate(serialized)
 
