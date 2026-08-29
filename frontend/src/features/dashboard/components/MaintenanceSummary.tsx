@@ -95,7 +95,7 @@ export function MaintenanceSummary({
     vehicles,
 }: MaintenanceSummaryProps) {
     const upcomingMaintenance = maintenance
-        .filter((record) => record.status === "UPCOMING")
+        .filter((record) => record.schedule_status === "UPCOMING")
         .sort((a, b) => {
             const aDate = a.next_due_date
                 ? new Date(a.next_due_date).getTime()
@@ -109,7 +109,7 @@ export function MaintenanceSummary({
         });
 
     const overdueMaintenance = maintenance.filter(
-        (record) => record.status === "OVERDUE",
+        (record) => record.schedule_status === "OVERDUE",
     );
 
     return (
