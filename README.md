@@ -4,7 +4,7 @@
 
 ## Overview
 
-The **AI Vehicle Intelligence Platform** is a vehicle management and intelligence system designed to help vehicle owners understand the condition and maintenance needs of their vehicles.
+The **SmartDrive** is a vehicle management and intelligence system designed to help vehicle owners understand the condition and maintenance needs of their vehicles.
 
 Unlike a conventional vehicle maintenance tracker that only records service history or sends fixed reminders, this project aims to turn a vehicle's historical data into **personalized, actionable insights**.
 
