@@ -18,6 +18,7 @@ import FleetPage from "@/features/fleet/pages/FleetPage";
 import ProfilePage from "@/features/profile/pages/ProfilePage";
 import SettingsPage from "@/features/settings/pages/SettingsPage";
 import VehicleDetailsPage from "@/features/garage/pages/VehicleDetailsPage";
+import ServiceHistoryPage from "@/features/maintenance/pages/ServiceHistoryPage";
 
 import { ROUTES } from "./routes";
 
@@ -45,6 +46,11 @@ export default function AppRouter() {
                         element={<VehicleDetailsPage />}
                     />
 
+                    <Route
+                        path="/garage/:vehicleId/service-history"
+                        element={<ServiceHistoryPage />}
+                    />
+                    
                     <Route
                         path={ROUTES.AI}
                         element={<MaintenancePage />}
