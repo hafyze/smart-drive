@@ -4,11 +4,11 @@ from fastapi import HTTPException, status
 
 from app.repositories.maintenance_repository import MaintenanceRepository
 from app.repositories.vehicle_repository import VehicleRepository
-from app.schemas.maintenance import MaintenanceListItem
+from app.schemas.maintenance import (MaintenanceListItem, MaintenanceStatus)
 from app.shared.utils.mongodb import to_object_id
 from app.shared.utils.serialization import serialize_document
 
-class ServiceHistory:
+class ServiceHistoryService:
     def __init__(self):
         self.maintenance_repository = MaintenanceRepository()
         self.vehicle_repository = VehicleRepository()
@@ -36,7 +36,7 @@ class ServiceHistory:
         completed_records = [
             record 
             for record in maintenance_records
-            if record.get("status") == "COMPLETED"
+            if record.get("status") == MaintenanceStatus.COMPLETED
         ]
 
         #new service first
