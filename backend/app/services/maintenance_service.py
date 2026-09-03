@@ -6,15 +6,15 @@ from fastapi import HTTPException, status
 from app.repositories.maintenance_repository import MaintenanceRepository
 from app.repositories.vehicle_repository import VehicleRepository
 from app.schemas.maintenance import (
-    MaintenanceCreate,
-    MaintenanceResponse,
+    MaintenanceItemResponse,
+    MaintenanceScheduleStatus,
     MaintenanceStatus,
-    MaintenanceListItem,
-    MaintenanceUpdate,
+    ServiceVisitCreate,
+    ServiceVisitResponse,
 )
+from app.services.maintenance_status import calculate_maintenance_status
 from app.shared.utils.mongodb import to_object_id
 from app.shared.utils.serialization import serialize_document
-from app.services.maintenance_status import calculate_maintenance_status
 
 
 class MaintenanceService:
@@ -22,57 +22,137 @@ class MaintenanceService:
         self.repository = MaintenanceRepository()
         self.vehicle_repository = VehicleRepository()
 
-    # Create
-    async def create_maintenance(
+    # ============================================================
+    # CREATE SERVICE VISIT
+    # ============================================================
+
+    async def create_service_visit(
         self,
         user_id: str,
-        maintenance: MaintenanceCreate,
-    ) -> MaintenanceResponse:
+        service_visit: ServiceVisitCreate,
+    ) -> ServiceVisitResponse:
+
+        # --------------------------------------------------------
+        # Make sure the vehicle belongs to the current user
+        # --------------------------------------------------------
 
         vehicle = await self._get_owned_vehicle(
-            maintenance.vehicle_id,
+            service_visit.vehicle_id,
             user_id,
         )
 
         now = datetime.now(timezone.utc)
 
-        document = maintenance.model_dump(
-            exclude={"vehicle_id"},
+        # --------------------------------------------------------
+        # Create the service visit ID
+        #
+        # The service visit itself is the parent record.
+        # Each maintenance item is stored inside the visit.
+        # --------------------------------------------------------
+
+        from bson import ObjectId
+
+        service_visit_id = ObjectId()
+
+        created_items = []
+
+        # --------------------------------------------------------
+        # Process each maintenance item
+        # --------------------------------------------------------
+
+        for item in service_visit.items:
+
+            item_document = item.model_dump()
+
+            # Convert date values into MongoDB-compatible datetime
+            item_document = self._serialize_update_data(
+                item_document
+            )
+
+            # ----------------------------------------------------
+            # Calculate schedule status
+            # ----------------------------------------------------
+
+            next_due_date = item_document.get("next_due_date")
+
+            if isinstance(next_due_date, datetime):
+                next_due_date = next_due_date.date()
+
+            schedule_status = calculate_maintenance_status(
+                maintenance_type=item.type,
+                next_due_date=next_due_date,
+                next_due_mileage=item_document.get(
+                    "next_due_mileage"
+                ),
+                current_mileage=vehicle["current_mileage"],
+            )
+
+            # ----------------------------------------------------
+            # Build maintenance item
+            # ----------------------------------------------------
+
+            item_document["id"] = str(ObjectId())
+
+            item_document["status"] = MaintenanceStatus.COMPLETED
+
+            item_document["schedule_status"] = schedule_status
+
+            created_items.append(
+                item_document
+            )
+
+        # --------------------------------------------------------
+        # Create ONE service visit document
+        # --------------------------------------------------------
+
+        service_visit_document = {
+            "_id": service_visit_id,
+            "user_id": user_id,
+            "vehicle_id": vehicle["_id"],
+            "service_date": service_visit.service_date,
+            "mileage_at_service": service_visit.mileage_at_service,
+            "workshop": service_visit.workshop,
+            "notes": service_visit.notes,
+            "items": created_items,
+            "created_at": now,
+            "updated_at": now,
+        }
+
+        # Convert service date to MongoDB datetime
+        service_visit_document = self._serialize_update_data(
+            service_visit_document
         )
 
-        document = self._serialize_update_data(document)
-
-        schedule_status = calculate_maintenance_status(
-            maintenance_type=maintenance.type,
-            next_due_date=maintenance.next_due_date,
-            next_due_mileage=maintenance.next_due_mileage,
-            current_mileage=vehicle["current_mileage"],
+        created = await self.repository.insert(
+            service_visit_document
         )
-
-        document["user_id"] = user_id
-        document["vehicle_id"] = vehicle["_id"]
-        document["status"] = MaintenanceStatus.COMPLETED
-        document["schedule_status"] = schedule_status
-        document["created_at"] = now
-        document["updated_at"] = now
-
-        created = await self.repository.insert(document)
 
         serialized = serialize_document(created)
 
-        return MaintenanceResponse.model_validate(serialized)
+        return ServiceVisitResponse.model_validate(
+            serialized
+        )
 
-    #Get all
-    async def get_all_maintenance(
+    # ============================================================
+    # GET ALL SERVICE VISITS
+    # ============================================================
+
+    async def get_all_service_visits(
         self,
         user_id: str,
         vehicle_id: str | None = None,
-    ) -> list[MaintenanceListItem]:
+    ) -> list[ServiceVisitResponse]:
+
         filter_query = {
             "user_id": user_id,
         }
 
+        # --------------------------------------------------------
+        # Optional vehicle filter
+        # --------------------------------------------------------
+
         if vehicle_id is not None:
+
             vehicle = await self._get_owned_vehicle(
                 vehicle_id,
                 user_id,
@@ -80,9 +160,20 @@ class MaintenanceService:
 
             filter_query["vehicle_id"] = vehicle["_id"]
 
-        maintenance_records = await self.repository.find_many(
+        # --------------------------------------------------------
+        # Get service visits
+        # --------------------------------------------------------
+
+        service_visits = await self.repository.find_many(
             filter_query
         )
+
+        # --------------------------------------------------------
+        # Get current mileage for the relevant vehicles
+        #
+        # Schedule status depends on current mileage, so we
+        # recalculate it when retrieving the records.
+        # --------------------------------------------------------
 
         vehicles = await self.vehicle_repository.find_many(
             {
@@ -97,155 +188,271 @@ class MaintenanceService:
 
         result = []
 
-        for record in maintenance_records:
+        # --------------------------------------------------------
+        # Recalculate schedule status for every item
+        # --------------------------------------------------------
+
+        for visit in service_visits:
+
             current_mileage = vehicle_mileage.get(
-                str(record["vehicle_id"])
+                str(visit["vehicle_id"])
             )
 
             if current_mileage is None:
-                # This should normally never happen because
-                # maintenance records belong to the user's vehicles.
                 continue
 
-            next_due_date = record.get("next_due_date")
+            items = []
+
+            for item in visit.get("items", []):
+
+                next_due_date = item.get(
+                    "next_due_date"
+                )
+
+                if isinstance(next_due_date, datetime):
+                    next_due_date = next_due_date.date()
+
+                schedule_status = calculate_maintenance_status(
+                    maintenance_type=item["type"],
+                    next_due_date=next_due_date,
+                    next_due_mileage=item.get(
+                        "next_due_mileage"
+                    ),
+                    current_mileage=current_mileage,
+                )
+
+                item["status"] = MaintenanceStatus.COMPLETED
+                item["schedule_status"] = schedule_status
+
+                items.append(
+                    MaintenanceItemResponse.model_validate(
+                        serialize_document(item)
+                    )
+                )
+
+            serialized = serialize_document(visit)
+
+            serialized["items"] = items
+
+            result.append(
+                ServiceVisitResponse.model_validate(
+                    serialized
+                )
+            )
+
+        # --------------------------------------------------------
+        # Newest service visit first
+        # --------------------------------------------------------
+
+        result.sort(
+            key=lambda visit: visit.service_date,
+            reverse=True,
+        )
+
+        return result
+
+    # ============================================================
+    # GET ONE SERVICE VISIT
+    # ============================================================
+
+    async def get_service_visit(
+        self,
+        service_visit_id: str,
+        user_id: str,
+    ) -> ServiceVisitResponse:
+
+        service_visit = await self._get_owned_service_visit(
+            service_visit_id,
+            user_id,
+        )
+
+        vehicle = await self._get_owned_vehicle(
+            str(service_visit["vehicle_id"]),
+            user_id,
+        )
+
+        current_mileage = vehicle["current_mileage"]
+
+        # --------------------------------------------------------
+        # Recalculate schedule status
+        # --------------------------------------------------------
+
+        items = []
+
+        for item in service_visit.get("items", []):
+
+            next_due_date = item.get(
+                "next_due_date"
+            )
+
+            if isinstance(next_due_date, datetime):
+                next_due_date = next_due_date.date()
 
             schedule_status = calculate_maintenance_status(
-                maintenance_type=record["type"],
-                next_due_date=(
-                    next_due_date.date()
-                    if next_due_date
-                    else None
+                maintenance_type=item["type"],
+                next_due_date=next_due_date,
+                next_due_mileage=item.get(
+                    "next_due_mileage"
                 ),
-                next_due_mileage=record.get("next_due_mileage"),
                 current_mileage=current_mileage,
             )
 
-            serialized = serialize_document(record)
-            serialized["status"] = MaintenanceStatus.COMPLETED
-            serialized["schedule_status"] = schedule_status
+            item["status"] = MaintenanceStatus.COMPLETED
+            item["schedule_status"] = schedule_status
 
-            result.append(
-                MaintenanceListItem.model_validate(serialized)
+            items.append(
+                MaintenanceItemResponse.model_validate(
+                    serialize_document(item)
+                )
             )
 
-        return result
-    
-    #Get one
-    async def get_maintenance(
-        self,
-        maintenance_id: str,
-        user_id: str,
-    ) -> MaintenanceResponse:
+        serialized = serialize_document(
+            service_visit
+        )
 
-        maintenance = await self._get_owned_maintenance(
-            maintenance_id,
+        serialized["items"] = items
+
+        return ServiceVisitResponse.model_validate(
+            serialized
+        )
+
+    # ============================================================
+    # UPDATE SERVICE VISIT
+    # ============================================================
+
+    async def update_service_visit(
+        self,
+        service_visit_id: str,
+        user_id: str,
+        service_visit: ServiceVisitCreate,
+    ) -> ServiceVisitResponse:
+
+        existing = await self._get_owned_service_visit(
+            service_visit_id,
             user_id,
         )
+
+        # --------------------------------------------------------
+        # Make sure the target vehicle belongs to the user
+        # --------------------------------------------------------
 
         vehicle = await self._get_owned_vehicle(
-            str(maintenance["vehicle_id"]),
+            service_visit.vehicle_id,
             user_id,
         )
 
-        next_due_date = maintenance.get("next_due_date")
+        now = datetime.now(timezone.utc)
 
-        schedule_status = calculate_maintenance_status(
-            maintenance_type=maintenance["type"],
-            next_due_date=(
-                next_due_date.date()
-                if next_due_date
-                else None
-            ),
-            next_due_mileage=maintenance.get("next_due_mileage"),
-            current_mileage=vehicle["current_mileage"],
+        updated_items = []
+
+        # --------------------------------------------------------
+        # Rebuild the maintenance items
+        # --------------------------------------------------------
+
+        for item in service_visit.items:
+
+            item_document = item.model_dump()
+
+            item_document = self._serialize_update_data(
+                item_document
+            )
+
+            next_due_date = item_document.get(
+                "next_due_date"
+            )
+
+            if isinstance(next_due_date, datetime):
+                next_due_date = next_due_date.date()
+
+            schedule_status = calculate_maintenance_status(
+                maintenance_type=item.type,
+                next_due_date=next_due_date,
+                next_due_mileage=item_document.get(
+                    "next_due_mileage"
+                ),
+                current_mileage=vehicle["current_mileage"],
+            )
+
+            from bson import ObjectId
+
+            item_document["id"] = str(
+                ObjectId()
+            )
+
+            item_document["status"] = (
+                MaintenanceStatus.COMPLETED
+            )
+
+            item_document["schedule_status"] = (
+                schedule_status
+            )
+
+            updated_items.append(
+                item_document
+            )
+
+        # --------------------------------------------------------
+        # Update ONE service visit
+        # --------------------------------------------------------
+
+        update_data = {
+            "vehicle_id": vehicle["_id"],
+            "service_date": service_visit.service_date,
+            "mileage_at_service": service_visit.mileage_at_service,
+            "workshop": service_visit.workshop,
+            "notes": service_visit.notes,
+            "items": updated_items,
+            "updated_at": now,
+        }
+
+        update_data = self._serialize_update_data(
+            update_data
         )
 
-        serialized = serialize_document(maintenance)
-
-        serialized["status"] = MaintenanceStatus.COMPLETED
-        serialized["schedule_status"] = schedule_status
-
-        return MaintenanceResponse.model_validate(serialized)
-
-    # Update
-    async def update_maintenance(
-        self,
-        maintenance_id: str,
-        user_id: str,
-        update: MaintenanceUpdate,
-    ) -> MaintenanceResponse:
-        maintenance = await self._get_owned_maintenance(
-            maintenance_id,
-            user_id
-        )
-
-        update_data = update.model_dump(
-            exclude_none=True,
-            exclude_unset=True,
-        )
-        update_data = self._serialize_update_data(update_data)
-        maintenance_type = update.type or maintenance["type"]
-
-        next_due_date = (
-            update.next_due_date
-            if update.next_due_date is not None
-            else maintenance.get("next_due_date")
-        )
-
-        next_due_mileage = (
-            update.next_due_mileage
-            if update.next_due_mileage is not None
-            else maintenance.get("next_due_mileage")
-        )
-
-        # Get the current vehicle mileage because the maintenance
-        # status depends on the vehicle's current mileage.
-        vehicle = await self._get_owned_vehicle(
-            str(maintenance["vehicle_id"]),
-            user_id,
-        )
-
-        schedule_status = calculate_maintenance_status(
-            maintenance_type=maintenance_type,
-            next_due_date=next_due_date,
-            next_due_mileage=next_due_mileage,
-            current_mileage=vehicle["current_mileage"],
-        )
-
-        update_data["status"] = MaintenanceStatus.COMPLETED
-        update_data["schedule_status"] = schedule_status
-        update_data["updated_at"] = datetime.now(timezone.utc)
         updated = await self.repository.update(
             {
-                "_id": maintenance["_id"]
+                "_id": existing["_id"],
             },
             update_data,
         )
-        serialized = serialize_document(updated)
 
-        return MaintenanceResponse.model_validate(serialized)
+        serialized = serialize_document(
+            updated
+        )
 
-    # Delete
-    async def delete_maintenance(
+        return ServiceVisitResponse.model_validate(
+            serialized
+        )
+
+    # ============================================================
+    # DELETE SERVICE VISIT
+    # ============================================================
+
+    async def delete_service_visit(
         self,
-        maintenace_id: str,
+        service_visit_id: str,
         user_id: str,
     ) -> dict:
-        maintenance = await self._get_owned_maintenance(
-            maintenace_id,
-            user_id
+
+        service_visit = await self._get_owned_service_visit(
+            service_visit_id,
+            user_id,
         )
 
         deleted = await self.repository.delete(
             {
-                "_id": maintenance["_id"]
+                "_id": service_visit["_id"],
             }
         )
-        return{
+
+        return {
             "success": deleted
         }
 
-    # Private Helper
+    # ============================================================
+    # PRIVATE: GET OWNED VEHICLE
+    # ============================================================
+
     async def _get_owned_vehicle(
         self,
         vehicle_id: str,
@@ -259,12 +466,14 @@ class MaintenanceService:
         )
 
         if vehicle is None:
+
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Vehicle not found.",
             )
 
         if str(vehicle["user_id"]) != user_id:
+
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied.",
@@ -272,37 +481,55 @@ class MaintenanceService:
 
         return vehicle
 
-    # Private Helper
-    async def _get_owned_maintenance(
+    # ============================================================
+    # PRIVATE: GET OWNED SERVICE VISIT
+    # ============================================================
+
+    async def _get_owned_service_visit(
         self,
-        maintenance_id: str,
+        service_visit_id: str,
         user_id: str,
     ) -> dict[str, Any]:
 
-        maintenance = await self.repository.find_one(
+        service_visit = await self.repository.find_one(
             {
-                "_id": to_object_id(maintenance_id),
+                "_id": to_object_id(
+                    service_visit_id
+                ),
             }
         )
 
-        if maintenance is None:
+        if service_visit is None:
+
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Maintenance record not found.",
+                detail="Service visit not found.",
             )
 
-        if str(maintenance["user_id"]) != user_id:
+        if str(service_visit["user_id"]) != user_id:
+
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied.",
             )
 
-        return maintenance
+        return service_visit
+
+    # ============================================================
+    # PRIVATE: SERIALIZE DATE VALUES
+    # ============================================================
 
     @staticmethod
-    def _serialize_update_data(update_data: dict) -> dict:
+    def _serialize_update_data(
+        update_data: dict,
+    ) -> dict:
+
         for key, value in update_data.items():
-            if isinstance(value, date) and not isinstance(value, datetime):
+
+            if (
+                isinstance(value, date)
+                and not isinstance(value, datetime)
+            ):
                 update_data[key] = datetime.combine(
                     value,
                     datetime.min.time(),

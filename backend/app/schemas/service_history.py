@@ -1,4 +1,5 @@
 from datetime import date
+
 from pydantic import BaseModel
 
 from app.schemas.maintenance import MaintenanceType
@@ -9,6 +10,7 @@ class ServiceHistoryItem(BaseModel):
     type: MaintenanceType
     description: str | None = None
     cost: float | None = None
+    notes: str | None = None
 
 
 class ServiceHistoryVisit(BaseModel):
@@ -16,5 +18,5 @@ class ServiceHistoryVisit(BaseModel):
     service_date: date
     mileage: int
     workshop: str | None = None
-    total_cost: float
+    total_cost: float | None = None
     items: list[ServiceHistoryItem]

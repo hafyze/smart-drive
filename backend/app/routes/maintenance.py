@@ -2,92 +2,111 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app.routes.auth import get_current_user
 from app.schemas.maintenance import (
-    MaintenanceCreate,
-    MaintenanceResponse,
-    MaintenanceListItem,
-    MaintenanceUpdate
+    ServiceVisitCreate,
+    ServiceVisitResponse,
 )
 from app.services.maintenance_service import MaintenanceService
 from app.dependencies.services_dependencies import get_maintenance_service
+
 
 router = APIRouter(
     prefix="/maintenance",
     tags=["Maintenance"],
 )
 
-#Create
+
+# ============================================================
+# Create Service Visit
+# ============================================================
+
 @router.post(
     "",
-    response_model=MaintenanceResponse,
+    response_model=ServiceVisitResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_maintenance(
-    maintenance: MaintenanceCreate,
+async def create_service_visit(
+    service_visit: ServiceVisitCreate,
     current_user: dict = Depends(get_current_user),
     service: MaintenanceService = Depends(get_maintenance_service),
 ):
-    return await service.create_maintenance(
+    return await service.create_service_visit(
         user_id=current_user["id"],
-        maintenance=maintenance,
+        service_visit=service_visit,
     )
 
-# Get All
+
+# ============================================================
+# Get Maintenance Records
+# ============================================================
+
 @router.get(
     "",
-    response_model=list[MaintenanceListItem],
+    response_model=list[ServiceVisitResponse],
 )
 async def get_all_maintenance(
     vehicle_id: str | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
     service: MaintenanceService = Depends(get_maintenance_service),
 ):
-    return await service.get_all_maintenance(
+    return await service.get_all_service_visits(
         user_id=current_user["id"],
         vehicle_id=vehicle_id,
     )
 
-# Get one
+
+# ============================================================
+# Get One Service Visit
+# ============================================================
+
 @router.get(
-    "/{maintenance_id}",
-    response_model=MaintenanceResponse,
+    "/{service_visit_id}",
+    response_model=ServiceVisitResponse,
 )
-async def get_maintenance(
-    maintenance_id: str,
+async def get_service_visit(
+    service_visit_id: str,
     current_user: dict = Depends(get_current_user),
     service: MaintenanceService = Depends(get_maintenance_service),
 ):
-    return await service.get_maintenance(
-        maintenance_id=maintenance_id,
+    return await service.get_service_visit(
+        service_visit_id=service_visit_id,
         user_id=current_user["id"],
     )
 
-#Update 
+
+# ============================================================
+# Update Service Visit
+# ============================================================
+
 @router.put(
-    "/{maintenance_id}",
-    response_model=MaintenanceResponse,
+    "/{service_visit_id}",
+    response_model=ServiceVisitResponse,
 )
-async def update_maintenance(
-    maintenance_id: str,
-    maintenance: MaintenanceUpdate,
+async def update_service_visit(
+    service_visit_id: str,
+    service_visit: ServiceVisitCreate,
     current_user: dict = Depends(get_current_user),
     service: MaintenanceService = Depends(get_maintenance_service),
 ):
-    return await service.update_maintenance(
-        maintenance_id=maintenance_id,
+    return await service.update_service_visit(
+        service_visit_id=service_visit_id,
         user_id=current_user["id"],
-        update=maintenance,
+        service_visit=service_visit,
     )
 
-# Delete
+
+# ============================================================
+# Delete Service Visit
+# ============================================================
+
 @router.delete(
-    "/{maintenance_id}",
+    "/{service_visit_id}",
 )
-async def delete_maintenance(
-    maintenance_id: str,
+async def delete_service_visit(
+    service_visit_id: str,
     current_user: dict = Depends(get_current_user),
     service: MaintenanceService = Depends(get_maintenance_service),
 ):
-    return await service.delete_maintenance(
-        maintenace_id=maintenance_id,
+    return await service.delete_service_visit(
+        service_visit_id=service_visit_id,
         user_id=current_user["id"],
     )

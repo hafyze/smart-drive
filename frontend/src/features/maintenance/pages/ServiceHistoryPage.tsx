@@ -1,34 +1,11 @@
-import { ArrowLeft, CalendarDays, Gauge, Wrench } from "lucide-react";
+import { ArrowLeft, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
+import { ServiceHistoryTimeline } from "@/features/maintenance/components/ServiceHistoryTimeline";
 
 import { useServiceHistory } from "../hooks/useServiceHistory";
 import { Button } from "@/shared/components/ui/button";
-
-function formatMaintenanceType(type: string) {
-    return type
-        .toLowerCase()
-        .replaceAll("_", " ")
-        .replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function formatDate(value: string) {
-    return new Intl.DateTimeFormat("en-MY", {
-        dateStyle: "medium",
-    }).format(new Date(value));
-}
-
-function formatCost(cost: number | null) {
-    if (cost === null) {
-        return "Cost not provided";
-    }
-
-    return `RM ${cost.toLocaleString("en-MY", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    })}`;
-}
 
 export default function ServiceHistoryPage() {
     const { vehicleId } = useParams();
@@ -148,7 +125,7 @@ export default function ServiceHistoryPage() {
                 <Card>
                     <CardHeader>
                         <h2 className="font-heading text-lg font-semibold">
-                            Completed Services
+                            Service Timeline
                         </h2>
 
                         <p className="text-sm text-muted-foreground">
@@ -160,60 +137,7 @@ export default function ServiceHistoryPage() {
                     </CardHeader>
 
                     <CardContent>
-                        <div className="space-y-6">
-                            {serviceHistory.map((record) => (
-                                <div
-                                    key={record.id}
-                                    className="border-b pb-6 last:border-b-0 last:pb-0"
-                                >
-                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                        <div className="space-y-2">
-                                            <h3 className="font-medium">
-                                                {formatMaintenanceType(record.type)}
-                                            </h3>
-
-                                            {record.description && (
-                                                <p className="text-sm text-muted-foreground">
-                                                    {record.description}
-                                                </p>
-                                            )}
-
-                                            <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:gap-5">
-                                                <div className="flex items-center gap-2">
-                                                    <CalendarDays className="size-4" />
-                                                    {formatDate(record.service_date)}
-                                                </div>
-
-                                                <div className="flex items-center gap-2">
-                                                    <Gauge className="size-4" />
-                                                    {record.mileage_at_service.toLocaleString()} km
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="text-left sm:text-right">
-                                            <p className="font-medium">
-                                                {formatCost(record.cost)}
-                                            </p>
-
-                                            {record.workshop && (
-                                                <p className="mt-1 text-sm text-muted-foreground">
-                                                    {record.workshop}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {record.notes && (
-                                        <div className="mt-4 rounded-lg bg-muted/50 p-3">
-                                            <p className="text-sm whitespace-pre-wrap text-muted-foreground">
-                                                {record.notes}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                        <ServiceHistoryTimeline records={serviceHistory} />
                     </CardContent>
                 </Card>
             )}

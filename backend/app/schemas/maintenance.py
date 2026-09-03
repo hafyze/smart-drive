@@ -4,7 +4,9 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 
 
+# ============================================================
 # Enums
+# ============================================================
 
 class MaintenanceType(str, Enum):
     ENGINE_OIL = "ENGINE_OIL"
@@ -27,14 +29,17 @@ class MaintenanceType(str, Enum):
 class MaintenanceStatus(str, Enum):
     COMPLETED = "COMPLETED"
 
+
 class MaintenanceScheduleStatus(str, Enum):
     UPCOMING = "UPCOMING"
     OVERDUE = "OVERDUE"
 
 
-# Base Maintenance
+# ============================================================
+# Maintenance Item
+# ============================================================
 
-class MaintenanceBase(BaseModel):
+class MaintenanceItemBase(BaseModel):
     type: MaintenanceType
 
     description: str | None = Field(
@@ -42,6 +47,41 @@ class MaintenanceBase(BaseModel):
         max_length=500,
     )
 
+    next_due_date: date | None = None
+
+    next_due_mileage: int | None = Field(
+        default=None,
+        ge=0,
+    )
+
+    cost: float | None = Field(
+        default=None,
+        ge=0,
+    )
+
+    notes: str | None = Field(
+        default=None,
+        max_length=1000,
+    )
+
+
+class MaintenanceItemCreate(MaintenanceItemBase):
+    pass
+
+
+class MaintenanceItemResponse(MaintenanceItemBase):
+    id: str
+    status: MaintenanceStatus
+    schedule_status: MaintenanceScheduleStatus | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ============================================================
+# Service Visit
+# ============================================================
+
+class ServiceVisitBase(BaseModel):
     service_date: date
 
     mileage_at_service: int = Field(
@@ -49,18 +89,6 @@ class MaintenanceBase(BaseModel):
         ge=0,
     )
 
-    next_due_date: date | None = None
-
-    next_due_mileage: int | None = Field(
-        default=None,
-        ge=0,
-    )
-
-    cost: float | None = Field(
-        default=None,
-        ge=0,
-    )
-
     workshop: str | None = Field(
         default=None,
         max_length=200,
@@ -72,81 +100,23 @@ class MaintenanceBase(BaseModel):
     )
 
 
-# Create
-
-class MaintenanceCreate(MaintenanceBase):
+class ServiceVisitCreate(ServiceVisitBase):
     vehicle_id: str
 
-
-# Update
-
-class MaintenanceUpdate(BaseModel):
-    type: MaintenanceType | None = None
-
-    description: str | None = Field(
-        default=None,
-        max_length=500,
-    )
-
-    service_date: date | None = None
-
-    mileage_at_service: int | None = Field(
-        default=None,
-        ge=0,
-    )
-
-    next_due_date: date | None = None
-
-    next_due_mileage: int | None = Field(
-        default=None,
-        ge=0,
-    )
-
-    cost: float | None = Field(
-        default=None,
-        ge=0,
-    )
-
-    workshop: str | None = Field(
-        default=None,
-        max_length=200,
-    )
-
-    notes: str | None = Field(
-        default=None,
-        max_length=1000,
+    items: list[MaintenanceItemCreate] = Field(
+        ...,
+        min_length=1,
     )
 
 
-# Response
-
-class MaintenanceResponse(MaintenanceBase):
+class ServiceVisitResponse(ServiceVisitBase):
     id: str
     user_id: str
     vehicle_id: str
-    status: MaintenanceStatus
-    schedule_status: MaintenanceScheduleStatus | None = None
+
+    items: list[MaintenanceItemResponse]
+
     created_at: datetime
     updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-# List
-
-class MaintenanceListItem(BaseModel):
-    id: str
-    vehicle_id: str
-    type: MaintenanceType
-    description: str | None = None
-    service_date: date
-    mileage_at_service: int
-    next_due_date: date | None = None
-    next_due_mileage: int | None = None
-    cost: float | None = None
-    workshop: str | None = None
-    notes: str | None = None
-    status: MaintenanceStatus
-    schedule_status: MaintenanceScheduleStatus | None = None
 
     model_config = ConfigDict(from_attributes=True)
