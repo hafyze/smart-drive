@@ -1,5 +1,6 @@
 import { ArrowLeft, CarFront, Gauge } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import { History } from "lucide-react";
 
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
@@ -132,57 +133,97 @@ export default function VehicleDetailsPage() {
                 </div>
             </div>
 
-            <EditVehicleDialog vehicle={vehicle} />
+            <div className="flex flex-wrap gap-2">
+                <EditVehicleDialog vehicle={vehicle} />
 
-            {/* Vehicle Overview */}
-            <Card>
+                <Button
+                    variant="outline"
+                    onClick={() => navigate(`/garage/${vehicleId}/service-history`)}
+                >
+                    <History className="size-4" />
+                    Service History
+                </Button>
+            </div>
+            {/* Vehicle Information */}
+            <Card className="overflow-hidden">
                 <CardHeader className="flex flex-row items-start justify-between">
                     <div>
-                        <h2 className="font-heading text-lg font-semibold">Vehicle Overview</h2>
+                        <h2 className="font-heading text-lg font-semibold">
+                            Vehicle Information
+                        </h2>
 
                         <p className="text-sm text-muted-foreground">
-                            Basic info about your vehicle
+                            Basic information about your vehicle
                         </p>
                     </div>
 
-                    <Badge>{vehicle.status}</Badge>
+                    <Badge>
+                        {vehicle.status}
+                    </Badge>
                 </CardHeader>
 
-                <CardContent>
-                    <div className="relative aspect-16/7 overflow-hidden rounded-lg bg-muted">
-                        {vehicle.photo_url ? (
-                            <img src={vehicle.photo_url}
-                                alt={`${vehicle.manufacturer} ${vehicle.model}`}
-                                className="h-full w-full object-cover"
-                            />
-                        ) : (
-                            <div className="flex h-full items-center justify-center">
-                                <CarFront className="size-16 text-muted-foreground" />
+                <CardContent className="space-y-8">
+                    {/* Main Vehicle Summary */}
+                    <div className="grid gap-6 md:grid-cols-[240px_1fr]">
+                        {/* Vehicle Image */}
+                        <div className="aspect-4/3 overflow-hidden rounded-xl bg-muted">
+                            {vehicle.photo_url ? (
+                                <img
+                                    src={vehicle.photo_url}
+                                    alt={`${vehicle.manufacturer} ${vehicle.model}`}
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                <div className="flex h-full items-center justify-center">
+                                    <CarFront className="size-14 text-muted-foreground" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Vehicle Summary */}
+                        <div className="flex flex-col justify-center space-y-4">
+                            <div>
+                                <p className="text-lg font-semibold">
+                                    {vehicle.nickname}
+                                </p>
+
+                                <p className="text-muted-foreground">
+                                    {vehicle.manufacturer} {vehicle.model}{" "}
+                                    {vehicle.variant}
+                                </p>
                             </div>
-                        )
-                        }
+
+                            <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">
+                                    Year
+                                </p>
+
+                                <p className="font-medium">
+                                    {vehicle.year}
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <Gauge className="size-4 text-muted-foreground" />
+
+                                <span className="font-medium">
+                                    {vehicle.current_mileage.toLocaleString()} km
+                                </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                <span>{formatEnum(vehicle.fuel_type)}</span>
+                                <span>•</span>
+                                <span>{formatEnum(vehicle.transmission)}</span>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Basic Details */}
-                    <div>
-                        <VehicleDetail label="Year" value={vehicle.year.toString()} />
-                        <VehicleDetail label="Mileage" value={`${vehicle.current_mileage.toLocaleString()} km`} icon={<Gauge />} />
-                        <VehicleDetail label="Fuel Type" value={formatEnum(vehicle.fuel_type)} />
-                        <VehicleDetail label="Transmission" value={formatEnum(vehicle.transmission)} />
-                    </div>
-                </CardContent>
-            </Card>
+                    {/* Divider */}
+                    <div className="border-t" />
 
-            {/* Vehicle Information */}
-            <Card>
-                <CardHeader>
-                    <h2 className="font-heading text-lg font-semibold">
-                        Vehicle Information
-                    </h2>
-                </CardHeader>
-
-                <CardContent>
-                    <div className="grid gap-6 sm:grid-cols-2">
+                    {/* Additional Vehicle Information */}
+                    <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
                         <VehicleDetail
                             label="Engine"
                             value={vehicle.engine ?? "Not provided"}
@@ -194,13 +235,13 @@ export default function VehicleDetailsPage() {
                         />
 
                         <VehicleDetail
-                            label="VIN"
-                            value={vehicle.vin ?? "Not provided"}
+                            label="Color"
+                            value={vehicle.color ?? "Not provided"}
                         />
 
                         <VehicleDetail
-                            label="Color"
-                            value={vehicle.color ?? "Not provided"}
+                            label="VIN"
+                            value={vehicle.vin ?? "Not provided"}
                         />
 
                         <VehicleDetail
@@ -213,11 +254,21 @@ export default function VehicleDetailsPage() {
                         />
                     </div>
 
+                    {/* Notes */}
                     {vehicle.notes && (
-                        <div className="space-y-6">
-                            <p className="text-sm font-medium">Notes</p>
-                            <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{vehicle.notes}</p>
-                        </div>
+                        <>
+                            <div className="border-t" />
+
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium">
+                                    Notes
+                                </p>
+
+                                <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                                    {vehicle.notes}
+                                </p>
+                            </div>
+                        </>
                     )}
                 </CardContent>
             </Card>

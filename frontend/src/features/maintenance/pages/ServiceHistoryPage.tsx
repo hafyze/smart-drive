@@ -1,9 +1,10 @@
-import { CalendarDays, Gauge, Wrench } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { ArrowLeft, CalendarDays, Gauge, Wrench } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 
 import { useServiceHistory } from "../hooks/useServiceHistory";
+import { Button } from "@/shared/components/ui/button";
 
 function formatMaintenanceType(type: string) {
     return type
@@ -31,6 +32,7 @@ function formatCost(cost: number | null) {
 
 export default function ServiceHistoryPage() {
     const { vehicleId } = useParams();
+    const navigate = useNavigate();
 
     const {
         data: serviceHistory,
@@ -101,14 +103,25 @@ export default function ServiceHistoryPage() {
     return (
         <div className="space-y-6 p-6">
             {/* Header */}
-            <div>
-                <h1 className="font-heading text-2xl font-semibold tracking-tight">
-                    Service History
-                </h1>
+            <div className="flex items-center gap-3">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate(`/garage/${vehicleId}`)}
+                    aria-label="Back to garage"
+                >
+                    <ArrowLeft />
+                </Button>
 
-                <p className="mt-1 text-sm text-muted-foreground">
-                    Completed maintenance and service records for this vehicle.
-                </p>
+                <div>
+                    <h1 className="font-heading text-2xl font-semibold tracking-tight">
+                        Service History
+                    </h1>
+
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Completed maintenance and service records for this vehicle.
+                    </p>
+                </div>
             </div>
 
             {/* Empty */}
