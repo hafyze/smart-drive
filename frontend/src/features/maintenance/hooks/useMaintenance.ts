@@ -5,12 +5,15 @@ import {
 } from "@tanstack/react-query";
 
 import { maintenanceApi } from "../api/maintenanceApi";
+
 import type {
-    CreateMaintenancePayload,
+    CreateServiceVisitPayload,
     UpdateMaintenancePayload,
 } from "../types/maintenance";
 
+
 const MAINTENANCE_QUERY_KEY = ["maintenance"] as const;
+
 
 export const useMaintenance = (vehicleId?: string) => {
     return useQuery({
@@ -23,6 +26,7 @@ export const useMaintenance = (vehicleId?: string) => {
         enabled: vehicleId !== undefined,
     });
 };
+
 
 export const useMaintenanceRecord = (
     maintenanceId: string,
@@ -38,6 +42,7 @@ export const useMaintenanceRecord = (
     });
 };
 
+
 export const useAllMaintenance = () => {
     return useQuery({
         queryKey: MAINTENANCE_QUERY_KEY,
@@ -45,21 +50,35 @@ export const useAllMaintenance = () => {
     });
 };
 
-export const useCreateMaintenance = () => {
+
+/* ============================================================
+   Create Service Visit
+   ============================================================ */
+
+export const useCreateServiceVisit = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: (
-            maintenance: CreateMaintenancePayload,
-        ) => maintenanceApi.create(maintenance),
+            serviceVisit: CreateServiceVisitPayload,
+        ) => maintenanceApi.createServiceVisit(serviceVisit),
 
         onSuccess: () => {
             queryClient.invalidateQueries({
                 queryKey: MAINTENANCE_QUERY_KEY,
             });
+
+            queryClient.invalidateQueries({
+                queryKey: ["service-history"],
+            });
         },
     });
 };
+
+
+/* ============================================================
+   Update Maintenance
+   ============================================================ */
 
 export const useUpdateMaintenance = () => {
     const queryClient = useQueryClient();
@@ -92,6 +111,11 @@ export const useUpdateMaintenance = () => {
         },
     });
 };
+
+
+/* ============================================================
+   Delete Maintenance
+   ============================================================ */
 
 export const useDeleteMaintenance = () => {
     const queryClient = useQueryClient();

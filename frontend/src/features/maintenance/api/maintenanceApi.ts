@@ -1,14 +1,16 @@
 import api from "@/shared/api/axios";
 
 import type {
-    CreateMaintenancePayload,
+    CreateServiceVisitPayload,
     DeleteMaintenanceResponse,
     Maintenance,
     MaintenanceListItem,
+    ServiceVisit,
     UpdateMaintenancePayload,
 } from "../types/maintenance";
 
 export const maintenanceApi = {
+    // Get all maintenance items for a vehicle
     getAll: async (
         vehicleId?: string,
     ): Promise<MaintenanceListItem[]> => {
@@ -24,6 +26,7 @@ export const maintenanceApi = {
         return response.data;
     },
 
+    // Get a single maintenance record
     getById: async (
         maintenanceId: string,
     ): Promise<Maintenance> => {
@@ -34,17 +37,19 @@ export const maintenanceApi = {
         return response.data;
     },
 
-    create: async (
-        maintenance: CreateMaintenancePayload,
-    ): Promise<Maintenance> => {
-        const response = await api.post<Maintenance>(
+    // Create a complete service visit
+    createServiceVisit: async (
+        serviceVisit: CreateServiceVisitPayload,
+    ): Promise<ServiceVisit> => {
+        const response = await api.post<ServiceVisit>(
             "/maintenance",
-            maintenance,
+            serviceVisit,
         );
 
         return response.data;
     },
 
+    // Update an individual maintenance item
     update: async (
         maintenanceId: string,
         maintenance: UpdateMaintenancePayload,
@@ -57,6 +62,7 @@ export const maintenanceApi = {
         return response.data;
     },
 
+    // Delete an individual maintenance item
     delete: async (
         maintenanceId: string,
     ): Promise<DeleteMaintenanceResponse> => {
