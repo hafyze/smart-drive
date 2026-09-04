@@ -11,9 +11,13 @@ import type {
     UpdateMaintenancePayload,
 } from "../types/maintenance";
 
-
 const MAINTENANCE_QUERY_KEY = ["maintenance"] as const;
+const SERVICE_HISTORY_QUERY_KEY = ["service-history"] as const;
 
+
+// ============================================================
+// Get Maintenance
+// ============================================================
 
 export const useMaintenance = (vehicleId?: string) => {
     return useQuery({
@@ -27,6 +31,10 @@ export const useMaintenance = (vehicleId?: string) => {
     });
 };
 
+
+// ============================================================
+// Get Single Maintenance Record
+// ============================================================
 
 export const useMaintenanceRecord = (
     maintenanceId: string,
@@ -43,6 +51,10 @@ export const useMaintenanceRecord = (
 };
 
 
+// ============================================================
+// Get All Maintenance
+// ============================================================
+
 export const useAllMaintenance = () => {
     return useQuery({
         queryKey: MAINTENANCE_QUERY_KEY,
@@ -50,10 +62,34 @@ export const useAllMaintenance = () => {
     });
 };
 
+export const useServiceVisit = (
+    serviceVisitId: string,
+) => {
+    return useQuery({
+        queryKey: [
+            ...MAINTENANCE_QUERY_KEY,
+            "visit",
+            serviceVisitId,
+        ],
+        queryFn: () => maintenanceApi.getById(serviceVisitId),
+        enabled: Boolean(serviceVisitId),
+    });
+};
 
-/* ============================================================
-   Create Service Visit
-   ============================================================ */
+// ============================================================
+// Create Service Visit
+// ============================================================
+//
+// A service visit can contain multiple maintenance items.
+//
+// Example:
+//
+// Service Visit
+// ├── Engine Oil
+// ├── Oil Filter
+// └── Air Filter
+//
+// ============================================================
 
 export const useCreateServiceVisit = () => {
     const queryClient = useQueryClient();
@@ -64,21 +100,23 @@ export const useCreateServiceVisit = () => {
         ) => maintenanceApi.createServiceVisit(serviceVisit),
 
         onSuccess: () => {
+            // Refresh maintenance data
             queryClient.invalidateQueries({
                 queryKey: MAINTENANCE_QUERY_KEY,
             });
 
+            // Refresh service history timeline
             queryClient.invalidateQueries({
-                queryKey: ["service-history"],
+                queryKey: SERVICE_HISTORY_QUERY_KEY,
             });
         },
     });
 };
 
 
-/* ============================================================
-   Update Maintenance
-   ============================================================ */
+// ============================================================
+// Update Maintenance Item
+// ============================================================
 
 export const useUpdateMaintenance = () => {
     const queryClient = useQueryClient();
@@ -97,10 +135,12 @@ export const useUpdateMaintenance = () => {
             ),
 
         onSuccess: (_, variables) => {
+            // Refresh maintenance lists
             queryClient.invalidateQueries({
                 queryKey: MAINTENANCE_QUERY_KEY,
             });
 
+            // Refresh individual record
             queryClient.invalidateQueries({
                 queryKey: [
                     ...MAINTENANCE_QUERY_KEY,
@@ -108,14 +148,19 @@ export const useUpdateMaintenance = () => {
                     variables.maintenanceId,
                 ],
             });
+
+            // Service history may also have changed
+            queryClient.invalidateQueries({
+                queryKey: SERVICE_HISTORY_QUERY_KEY,
+            });
         },
     });
 };
 
 
-/* ============================================================
-   Delete Maintenance
-   ============================================================ */
+// ============================================================
+// Delete Maintenance Item
+// ============================================================
 
 export const useDeleteMaintenance = () => {
     const queryClient = useQueryClient();
@@ -126,8 +171,14 @@ export const useDeleteMaintenance = () => {
         ) => maintenanceApi.delete(maintenanceId),
 
         onSuccess: () => {
+            // Refresh maintenance lists
             queryClient.invalidateQueries({
                 queryKey: MAINTENANCE_QUERY_KEY,
+            });
+
+            // Refresh service history
+            queryClient.invalidateQueries({
+                queryKey: SERVICE_HISTORY_QUERY_KEY,
             });
         },
     });

@@ -4,17 +4,16 @@ import type {
     CreateServiceVisitPayload,
     DeleteMaintenanceResponse,
     Maintenance,
-    MaintenanceListItem,
     ServiceVisit,
     UpdateMaintenancePayload,
 } from "../types/maintenance";
 
 export const maintenanceApi = {
-    // Get all maintenance items for a vehicle
+    // Get all service visits for a vehicle
     getAll: async (
         vehicleId?: string,
-    ): Promise<MaintenanceListItem[]> => {
-        const response = await api.get<MaintenanceListItem[]>(
+    ): Promise<ServiceVisit[]> => {
+        const response = await api.get<ServiceVisit[]>(
             "/maintenance",
             {
                 params: vehicleId
@@ -26,7 +25,7 @@ export const maintenanceApi = {
         return response.data;
     },
 
-    // Get a single maintenance record
+    // Get a single maintenance item
     getById: async (
         maintenanceId: string,
     ): Promise<Maintenance> => {

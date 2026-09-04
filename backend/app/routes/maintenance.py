@@ -8,7 +8,6 @@ from app.schemas.maintenance import (
 from app.services.maintenance_service import MaintenanceService
 from app.dependencies.services_dependencies import get_maintenance_service
 
-
 router = APIRouter(
     prefix="/maintenance",
     tags=["Maintenance"],
@@ -16,7 +15,7 @@ router = APIRouter(
 
 
 # ============================================================
-# Create Service Visit
+# CREATE SERVICE VISIT
 # ============================================================
 
 @router.post(
@@ -36,14 +35,14 @@ async def create_service_visit(
 
 
 # ============================================================
-# Get Maintenance Records
+# GET ALL SERVICE VISITS
 # ============================================================
 
 @router.get(
     "",
     response_model=list[ServiceVisitResponse],
 )
-async def get_all_maintenance(
+async def get_all_service_visits(
     vehicle_id: str | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
     service: MaintenanceService = Depends(get_maintenance_service),
@@ -55,7 +54,7 @@ async def get_all_maintenance(
 
 
 # ============================================================
-# Get One Service Visit
+# GET ONE SERVICE VISIT
 # ============================================================
 
 @router.get(
@@ -74,7 +73,7 @@ async def get_service_visit(
 
 
 # ============================================================
-# Update Service Visit
+# UPDATE SERVICE VISIT
 # ============================================================
 
 @router.put(
@@ -95,7 +94,7 @@ async def update_service_visit(
 
 
 # ============================================================
-# Delete Service Visit
+# DELETE SERVICE VISIT
 # ============================================================
 
 @router.delete(
