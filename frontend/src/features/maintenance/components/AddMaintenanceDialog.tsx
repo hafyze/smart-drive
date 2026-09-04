@@ -529,12 +529,10 @@ export function AddMaintenanceDialog({
                                                     min="0"
                                                     step="0.01"
                                                     placeholder="0.00"
-                                                    {...register(
-                                                        `items.${index}.cost`,
-                                                        {
-                                                            valueAsNumber: true,
-                                                        }
-                                                    )}
+                                                    {...register(`items.${index}.cost`, {
+                                                        setValueAs: (value) =>
+                                                            value === "" ? undefined : Number(value),
+                                                    })}
                                                 />
 
                                                 {itemErrors?.cost && (
@@ -610,9 +608,10 @@ export function AddMaintenanceDialog({
                                                     <Input
                                                         id={`items.${index}.next_due_date`}
                                                         type="date"
-                                                        {...register(
-                                                            `items.${index}.next_due_date`
-                                                        )}
+                                                        {...register(`items.${index}.next_due_mileage`, {
+                                                            setValueAs: (value) =>
+                                                                value === "" ? undefined : Number(value),
+                                                        })}
                                                     />
 
                                                     {itemErrors?.next_due_date && (
