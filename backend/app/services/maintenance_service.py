@@ -7,9 +7,9 @@ from app.repositories.maintenance_repository import MaintenanceRepository
 from app.repositories.vehicle_repository import VehicleRepository
 from app.schemas.maintenance import (
     MaintenanceItemResponse,
-    MaintenanceScheduleStatus,
     MaintenanceStatus,
     ServiceVisitCreate,
+    ServiceVisitUpdate,
     ServiceVisitResponse,
 )
 from app.services.maintenance_status import calculate_maintenance_status
@@ -324,8 +324,12 @@ class MaintenanceService:
         self,
         service_visit_id: str,
         user_id: str,
-        service_visit: ServiceVisitCreate,
+        service_visit: ServiceVisitUpdate,
     ) -> ServiceVisitResponse:
+
+        # --------------------------------------------------------
+        # Get existing service visit
+        # --------------------------------------------------------
 
         existing = await self._get_owned_service_visit(
             service_visit_id,
@@ -333,74 +337,114 @@ class MaintenanceService:
         )
 
         # --------------------------------------------------------
-        # Make sure the target vehicle belongs to the user
+        # Get the vehicle from the EXISTING service visit
         # --------------------------------------------------------
 
         vehicle = await self._get_owned_vehicle(
-            service_visit.vehicle_id,
+            str(existing["vehicle_id"]),
             user_id,
         )
 
         now = datetime.now(timezone.utc)
 
-        updated_items = []
-
         # --------------------------------------------------------
-        # Rebuild the maintenance items
+        # Use existing values when fields were not provided
         # --------------------------------------------------------
 
-        for item in service_visit.items:
+        service_date = (
+            service_visit.service_date
+            if service_visit.service_date is not None
+            else existing["service_date"]
+        )
 
-            item_document = item.model_dump()
+        mileage_at_service = (
+            service_visit.mileage_at_service
+            if service_visit.mileage_at_service is not None
+            else existing["mileage_at_service"]
+        )
 
-            item_document = self._serialize_update_data(
-                item_document
-            )
+        workshop = (
+            service_visit.workshop
+            if service_visit.workshop is not None
+            else existing.get("workshop")
+        )
 
-            next_due_date = item_document.get(
-                "next_due_date"
-            )
+        notes = (
+            service_visit.notes
+            if service_visit.notes is not None
+            else existing.get("notes")
+        )
 
-            if isinstance(next_due_date, datetime):
-                next_due_date = next_due_date.date()
+        # --------------------------------------------------------
+        # Maintenance items
+        #
+        # If items were supplied, rebuild them.
+        # If items were not supplied, keep existing items.
+        # --------------------------------------------------------
 
-            schedule_status = calculate_maintenance_status(
-                maintenance_type=item.type,
-                next_due_date=next_due_date,
-                next_due_mileage=item_document.get(
-                    "next_due_mileage"
-                ),
-                current_mileage=vehicle["current_mileage"],
-            )
+        if service_visit.items is not None:
 
-            from bson import ObjectId
+            updated_items = []
 
-            item_document["id"] = str(
-                ObjectId()
-            )
+            for item in service_visit.items:
 
-            item_document["status"] = (
-                MaintenanceStatus.COMPLETED
-            )
+                item_document = item.model_dump()
 
-            item_document["schedule_status"] = (
-                schedule_status
-            )
+                item_document = self._serialize_update_data(
+                    item_document
+                )
 
-            updated_items.append(
-                item_document
+                next_due_date = item_document.get(
+                    "next_due_date"
+                )
+
+                if isinstance(next_due_date, datetime):
+                    next_due_date = next_due_date.date()
+
+                schedule_status = calculate_maintenance_status(
+                    maintenance_type=item.type,
+                    next_due_date=next_due_date,
+                    next_due_mileage=item_document.get(
+                        "next_due_mileage"
+                    ),
+                    current_mileage=vehicle["current_mileage"],
+                )
+
+                from bson import ObjectId
+
+                item_document["id"] = str(
+                    ObjectId()
+                )
+
+                item_document["status"] = (
+                    MaintenanceStatus.COMPLETED
+                )
+
+                item_document["schedule_status"] = (
+                    schedule_status
+                )
+
+                updated_items.append(
+                    item_document
+                )
+
+        else:
+            # No items were included in the update.
+            # Keep the existing items unchanged.
+            updated_items = existing.get(
+                "items",
+                []
             )
 
         # --------------------------------------------------------
-        # Update ONE service visit
+        # Build update document
         # --------------------------------------------------------
 
         update_data = {
-            "vehicle_id": vehicle["_id"],
-            "service_date": service_visit.service_date,
-            "mileage_at_service": service_visit.mileage_at_service,
-            "workshop": service_visit.workshop,
-            "notes": service_visit.notes,
+            "service_date": service_date,
+            "mileage_at_service": mileage_at_service,
+            "workshop": workshop,
+            "notes": notes,
             "items": updated_items,
             "updated_at": now,
         }
@@ -409,12 +453,20 @@ class MaintenanceService:
             update_data
         )
 
+        # --------------------------------------------------------
+        # Update service visit
+        # --------------------------------------------------------
+
         updated = await self.repository.update(
             {
                 "_id": existing["_id"],
             },
             update_data,
         )
+
+        # --------------------------------------------------------
+        # Serialize response
+        # --------------------------------------------------------
 
         serialized = serialize_document(
             updated

@@ -53,12 +53,21 @@ export const maintenanceApi = {
         maintenanceId: string,
         maintenance: UpdateMaintenancePayload,
     ): Promise<Maintenance> => {
-        const response = await api.put<Maintenance>(
-            `/maintenance/${maintenanceId}`,
-            maintenance,
-        );
+        try {
+            const response = await api.put<Maintenance>(
+                `/maintenance/${maintenanceId}`,
+                maintenance,
+            );
 
-        return response.data;
+            return response.data;
+        } catch (error: any) {
+            console.error(
+                "UPDATE MAINTENANCE ERROR:",
+                error.response?.data ?? error
+            );
+
+            throw error;
+        }
     },
 
     // Delete an individual maintenance item

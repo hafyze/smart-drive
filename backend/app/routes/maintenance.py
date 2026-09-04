@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query, status
 from app.routes.auth import get_current_user
 from app.schemas.maintenance import (
     ServiceVisitCreate,
+    ServiceVisitUpdate,
     ServiceVisitResponse,
 )
 from app.services.maintenance_service import MaintenanceService
@@ -82,7 +83,7 @@ async def get_service_visit(
 )
 async def update_service_visit(
     service_visit_id: str,
-    service_visit: ServiceVisitCreate,
+    service_visit: ServiceVisitUpdate,
     current_user: dict = Depends(get_current_user),
     service: MaintenanceService = Depends(get_maintenance_service),
 ):
@@ -91,7 +92,6 @@ async def update_service_visit(
         user_id=current_user["id"],
         service_visit=service_visit,
     )
-
 
 # ============================================================
 # DELETE SERVICE VISIT

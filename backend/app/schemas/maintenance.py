@@ -108,6 +108,28 @@ class ServiceVisitCreate(ServiceVisitBase):
         min_length=1,
     )
 
+class ServiceVisitUpdate(BaseModel):
+    service_date: date | None = None
+
+    mileage_at_service: int | None = Field(
+        default=None,
+        ge=0,
+    )
+
+    workshop: str | None = Field(
+        default=None,
+        max_length=200,
+    )
+
+    notes: str | None = Field(
+        default=None,
+        max_length=1000,
+    )
+
+    items: list[MaintenanceItemCreate] | None = Field(
+        default=None,
+        min_length=1,
+    )
 
 class ServiceVisitResponse(ServiceVisitBase):
     id: str
