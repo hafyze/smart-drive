@@ -608,10 +608,9 @@ export function AddMaintenanceDialog({
                                                     <Input
                                                         id={`items.${index}.next_due_date`}
                                                         type="date"
-                                                        {...register(`items.${index}.next_due_mileage`, {
-                                                            setValueAs: (value) =>
-                                                                value === "" ? undefined : Number(value),
-                                                        })}
+                                                        {...register(
+                                                            `items.${index}.next_due_date`
+                                                        )}
                                                     />
 
                                                     {itemErrors?.next_due_date && (
@@ -644,8 +643,8 @@ export function AddMaintenanceDialog({
                                                         {...register(
                                                             `items.${index}.next_due_mileage`,
                                                             {
-                                                                valueAsNumber:
-                                                                    true,
+                                                                setValueAs: (value) =>
+                                                                    value === "" ? undefined : Number(value),
                                                             }
                                                         )}
                                                     />

@@ -14,9 +14,11 @@ class ServiceHistoryItem(BaseModel):
 
 
 class ServiceHistoryVisit(BaseModel):
+    id: str
     vehicle_id: str
     service_date: date
     mileage: int
     workshop: str | None = None
+    notes: str | None = None
     total_cost: float | None = None
     items: list[ServiceHistoryItem]

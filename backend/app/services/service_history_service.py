@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from fastapi import HTTPException, status
 
 from app.repositories.maintenance_repository import MaintenanceRepository
@@ -24,10 +22,6 @@ class ServiceHistoryService:
         user_id: str,
     ) -> list[ServiceHistoryVisit]:
 
-        # --------------------------------------------------
-        # Verify vehicle ownership
-        # --------------------------------------------------
-
         vehicle = await self.vehicle_repository.find_one(
             {
                 "_id": to_object_id(vehicle_id),
@@ -46,98 +40,59 @@ class ServiceHistoryService:
                 detail="Access denied",
             )
 
-        # --------------------------------------------------
-        # Get maintenance records
-        # --------------------------------------------------
-
-        maintenance_records = await self.maintenance_repository.find_many(
+        service_visits = await self.maintenance_repository.find_many(
             {
                 "vehicle_id": vehicle["_id"],
+                "user_id": user_id,
             }
         )
 
-        # --------------------------------------------------
-        # Only completed maintenance belongs in history
-        # --------------------------------------------------
-
-        completed_records = [
-            record
-            for record in maintenance_records
-            if record.get("status") == MaintenanceStatus.COMPLETED
-        ]
-
-        # --------------------------------------------------
-        # Group records into service visits
-        #
-        # Records are considered part of the same visit when
-        # they share:
-        #
-        #   - service date
-        #   - mileage
-        #   - workshop
-        # --------------------------------------------------
-
-        grouped_visits = defaultdict(list)
-
-        for record in completed_records:
-            key = (
-                record.get("service_date"),
-                record.get("mileage_at_service"),
-                record.get("workshop"),
-            )
-
-            grouped_visits[key].append(record)
-
-        # --------------------------------------------------
-        # Build service history response
-        # --------------------------------------------------
-
         service_history: list[ServiceHistoryVisit] = []
 
-        for (
-            service_date,
-            mileage,
-            workshop,
-        ), records in grouped_visits.items():
+        for visit in service_visits:
+            serialized_visit = serialize_document(visit)
 
             items: list[ServiceHistoryItem] = []
-
             total_cost = 0.0
             has_cost = False
 
-            for record in records:
-                serialized = serialize_document(record)
+            for item in serialized_visit.get("items", []):
+                if item.get("status") != MaintenanceStatus.COMPLETED:
+                    continue
 
                 items.append(
                     ServiceHistoryItem(
-                        id=serialized["id"],
-                        type=serialized["type"],
-                        description=serialized.get("description"),
-                        cost=serialized.get("cost"),
-                        notes=serialized.get("notes"),
+                        id=item["id"],
+                        type=item["type"],
+                        description=item.get("description"),
+                        cost=item.get("cost"),
+                        notes=item.get("notes"),
                     )
                 )
 
-                if serialized.get("cost") is not None:
-                    total_cost += serialized["cost"]
+                if item.get("cost") is not None:
+                    total_cost += item["cost"]
                     has_cost = True
+
+            if not items:
+                continue
+
+            service_date = serialized_visit["service_date"]
 
             service_history.append(
                 ServiceHistoryVisit(
+                    id=serialized_visit["id"],
                     vehicle_id=vehicle_id,
                     service_date=service_date.date()
                     if hasattr(service_date, "date")
                     else service_date,
-                    mileage=mileage,
-                    workshop=workshop,
+                    mileage=serialized_visit["mileage_at_service"],
+                    workshop=serialized_visit.get("workshop"),
+                    notes=serialized_visit.get("notes"),
                     total_cost=total_cost if has_cost else None,
                     items=items,
                 )
             )
-
-        # --------------------------------------------------
-        # Newest service visit first
-        # --------------------------------------------------
 
         service_history.sort(
             key=lambda visit: visit.service_date,

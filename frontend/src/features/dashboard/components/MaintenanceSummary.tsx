@@ -4,10 +4,13 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 
 import type { VehicleListItem } from "@/features/garage/types/vehicle";
-import type { MaintenanceListItem } from "@/features/maintenance/types/maintenance";
+import type {
+    MaintenanceListItem,
+    ServiceVisit,
+} from "@/features/maintenance/types/maintenance";
 
 interface MaintenanceSummaryProps {
-    maintenance: MaintenanceListItem[];
+    maintenance: ServiceVisit[];
     vehicles: VehicleListItem[];
 }
 
@@ -94,7 +97,21 @@ export function MaintenanceSummary({
     maintenance,
     vehicles,
 }: MaintenanceSummaryProps) {
-    const upcomingMaintenance = maintenance
+    const maintenanceItems = maintenance.flatMap((visit) =>
+        visit.items.map((item) => ({
+            ...item,
+            service_visit_id: visit.id,
+            user_id: visit.user_id,
+            vehicle_id: visit.vehicle_id,
+            service_date: visit.service_date,
+            mileage_at_service: visit.mileage_at_service,
+            workshop: visit.workshop,
+            created_at: visit.created_at,
+            updated_at: visit.updated_at,
+        })),
+    );
+
+    const upcomingMaintenance = maintenanceItems
         .filter((record) => record.schedule_status === "UPCOMING")
         .sort((a, b) => {
             const aDate = a.next_due_date
@@ -108,7 +125,7 @@ export function MaintenanceSummary({
             return aDate - bDate;
         });
 
-    const overdueMaintenance = maintenance.filter(
+    const overdueMaintenance = maintenanceItems.filter(
         (record) => record.schedule_status === "OVERDUE",
     );
 

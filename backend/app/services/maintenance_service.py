@@ -351,27 +351,29 @@ class MaintenanceService:
         # Use existing values when fields were not provided
         # --------------------------------------------------------
 
+        provided_fields = service_visit.model_fields_set
+
         service_date = (
             service_visit.service_date
-            if service_visit.service_date is not None
+            if "service_date" in provided_fields
             else existing["service_date"]
         )
 
         mileage_at_service = (
             service_visit.mileage_at_service
-            if service_visit.mileage_at_service is not None
+            if "mileage_at_service" in provided_fields
             else existing["mileage_at_service"]
         )
 
         workshop = (
             service_visit.workshop
-            if service_visit.workshop is not None
+            if "workshop" in provided_fields
             else existing.get("workshop")
         )
 
         notes = (
             service_visit.notes
-            if service_visit.notes is not None
+            if "notes" in provided_fields
             else existing.get("notes")
         )
 

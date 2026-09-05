@@ -5,7 +5,7 @@ import {
     Gauge,
     Wrench,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -15,23 +15,11 @@ import { useMaintenance } from "../hooks/useMaintenance";
 import { EditMaintenanceDialog } from "./EditMaintenanceDialog";
 import { DeleteMaintenanceDialog } from "./DeleteMaintenanceDialog";
 
-import type { MaintenanceListItem } from "../types/maintenance";
+import type { ServiceVisit } from "../types/maintenance";
 
 interface MaintenanceListProps {
     vehicleId: string;
 }
-
-interface MaintenanceGroup {
-    key: string;
-    serviceDate: string;
-    mileage: number;
-    workshop: string | null;
-    records: MaintenanceListItem[];
-}
-
-/* ============================================================
-   Formatting helpers
-   ============================================================ */
 
 function formatEnum(value: string | null | undefined): string {
     if (!value) {
@@ -81,9 +69,25 @@ function formatCost(cost: number | null | undefined): string {
     })}`;
 }
 
-/* ============================================================
-   Component
-   ============================================================ */
+function getVisitStatus(serviceVisit: ServiceVisit): string {
+    if (
+        serviceVisit.items.some(
+            (item) => item.schedule_status === "OVERDUE",
+        )
+    ) {
+        return "OVERDUE";
+    }
+
+    if (
+        serviceVisit.items.some(
+            (item) => item.schedule_status === "UPCOMING",
+        )
+    ) {
+        return "UPCOMING";
+    }
+
+    return "COMPLETED";
+}
 
 export function MaintenanceList({
     vehicleId,
@@ -94,105 +98,16 @@ export function MaintenanceList({
         isError,
     } = useMaintenance(vehicleId);
 
-    const maintenanceRecords = useMemo<
-        MaintenanceListItem[]
-    >(() => {
-        if (!serviceVisits) {
-            return [];
-        }
-
-        return serviceVisits.flatMap((visit) =>
-            visit.items.map((item) => ({
-                ...item,
-                user_id: visit.user_id,
-                vehicle_id: visit.vehicle_id,
-                service_date: visit.service_date,
-                mileage_at_service: visit.mileage_at_service,
-                workshop: visit.workshop,
-                created_at: visit.created_at,
-                updated_at: visit.updated_at,
-            })),
-        );
-    }, [serviceVisits]);
-
-    const [expandedGroups, setExpandedGroups] = useState<
+    const [expandedVisits, setExpandedVisits] = useState<
         Record<string, boolean>
     >({});
 
-    /* ========================================================
-       Group maintenance items into service visits
-       ======================================================== */
-
-    const groups = useMemo<MaintenanceGroup[]>(() => {
-        if (!maintenanceRecords) {
-            return [];
-        }
-
-        const grouped = new Map<string, MaintenanceGroup>();
-
-        for (const record of maintenanceRecords) {
-            /*
-             * A service visit is currently identified by:
-             *
-             * - service date
-             * - mileage
-             * - workshop
-             *
-             * This lets multiple maintenance items entered
-             * during the same visit appear together.
-             */
-
-            const workshop =
-                record.workshop?.trim() || null;
-
-            const serviceDate =
-                record.service_date || "";
-
-            const mileage =
-                record.mileage_at_service ?? 0;
-
-            const key = [
-                serviceDate,
-                mileage,
-                workshop?.toLowerCase() ?? "no-workshop",
-            ].join("|");
-
-            const existing = grouped.get(key);
-
-            if (existing) {
-                existing.records.push(record);
-            } else {
-                grouped.set(key, {
-                    key,
-                    serviceDate,
-                    mileage,
-                    workshop,
-                    records: [record],
-                });
-            }
-        }
-
-        return Array.from(grouped.values()).sort(
-            (a, b) =>
-                new Date(b.serviceDate).getTime() -
-                new Date(a.serviceDate).getTime(),
-        );
-    }, [maintenanceRecords]);
-
-    /* ========================================================
-       Toggle service visit
-       ======================================================== */
-
-    const toggleGroup = (key: string) => {
-        setExpandedGroups((current) => ({
+    const toggleVisit = (serviceVisitId: string) => {
+        setExpandedVisits((current) => ({
             ...current,
-            [key]: !current[key],
+            [serviceVisitId]: !current[serviceVisitId],
         }));
     };
-
-    /* ========================================================
-       Loading
-       ======================================================== */
 
     if (isLoading) {
         return (
@@ -202,10 +117,6 @@ export function MaintenanceList({
             </div>
         );
     }
-
-    /* ========================================================
-       Error
-       ======================================================== */
 
     if (isError) {
         return (
@@ -221,14 +132,7 @@ export function MaintenanceList({
         );
     }
 
-    /* ========================================================
-       Empty
-       ======================================================== */
-
-    if (
-        !maintenanceRecords ||
-        maintenanceRecords.length === 0
-    ) {
+    if (!serviceVisits || serviceVisits.length === 0) {
         return (
             <div className="rounded-lg border border-dashed p-8 text-center">
                 <Wrench className="mx-auto mb-3 size-8 text-muted-foreground" />
@@ -238,64 +142,35 @@ export function MaintenanceList({
                 </h3>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Maintenance records for this vehicle will
-                    appear here.
+                    Maintenance records for this vehicle will appear here.
                 </p>
             </div>
         );
     }
 
-    /* ========================================================
-       Render
-       ======================================================== */
-
     return (
         <div className="space-y-6">
-            {groups.map((group) => {
+            {serviceVisits.map((serviceVisit) => {
                 const isExpanded =
-                    expandedGroups[group.key] ?? false;
+                    expandedVisits[serviceVisit.id] ?? false;
 
-                const totalCost = group.records.reduce(
-                    (total, record) =>
-                        total + (record.cost ?? 0),
+                const totalCost = serviceVisit.items.reduce(
+                    (total, item) => total + (item.cost ?? 0),
                     0,
                 );
 
-                const hasCost = group.records.some(
-                    (record) => record.cost !== null,
+                const hasCost = serviceVisit.items.some(
+                    (item) => item.cost !== null,
                 );
 
                 const isMultiItem =
-                    group.records.length > 1;
+                    serviceVisit.items.length > 1;
 
-                /*
-                 * A completed service visit should normally
-                 * contain completed maintenance items.
-                 *
-                 * Keep this defensive because older records
-                 * may not have schedule_status populated.
-                 */
-                const status =
-                    group.records.every(
-                        (record) =>
-                            record.status === "COMPLETED",
-                    )
-                        ? "COMPLETED"
-                        : group.records.some(
-                              (record) =>
-                                  record.schedule_status ===
-                                  "OVERDUE",
-                          )
-                          ? "OVERDUE"
-                          : "UPCOMING";
+                const status = getVisitStatus(serviceVisit);
 
                 return (
-                    <Card key={group.key}>
+                    <Card key={serviceVisit.id}>
                         <CardContent className="p-0">
-                            {/* =================================================
-                                Service Visit Header
-                            ================================================= */}
-
                             <div className="space-y-4 p-5">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="min-w-0">
@@ -304,49 +179,47 @@ export function MaintenanceList({
                                                 {isMultiItem
                                                     ? "Service Visit"
                                                     : formatEnum(
-                                                          group
-                                                              .records[0]
+                                                          serviceVisit
+                                                              .items[0]
                                                               ?.type,
                                                       )}
                                             </h3>
 
                                             <Badge>
-                                                {formatStatus(
-                                                    status,
-                                                )}
+                                                {formatStatus(status)}
                                             </Badge>
                                         </div>
 
-                                        {/* Visit metadata */}
                                         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
                                             <span className="flex items-center gap-1.5">
                                                 <Calendar className="size-4" />
 
                                                 {formatDate(
-                                                    group.serviceDate,
+                                                    serviceVisit.service_date,
                                                 )}
                                             </span>
 
                                             <span className="flex items-center gap-1.5">
                                                 <Gauge className="size-4" />
 
-                                                {group.mileage.toLocaleString(
+                                                {serviceVisit.mileage_at_service.toLocaleString(
                                                     "en-MY",
                                                 )}{" "}
                                                 km
                                             </span>
 
-                                            {group.workshop && (
+                                            {serviceVisit.workshop && (
                                                 <span className="flex items-center gap-1.5">
                                                     <Wrench className="size-4" />
 
-                                                    {group.workshop}
+                                                    {
+                                                        serviceVisit.workshop
+                                                    }
                                                 </span>
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Total cost */}
                                     {hasCost && (
                                         <div className="shrink-0 text-right">
                                             <p className="text-xs text-muted-foreground">
@@ -354,73 +227,66 @@ export function MaintenanceList({
                                             </p>
 
                                             <p className="font-semibold">
-                                                {formatCost(
-                                                    totalCost,
-                                                )}
+                                                {formatCost(totalCost)}
                                             </p>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* =================================================
-                                    Service Items
-                                ================================================= */}
-
                                 <div className="space-y-2">
-                                    {group.records.map(
-                                        (record) => (
-                                            <div
-                                                key={record.id}
-                                                className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2.5"
-                                            >
-                                                <div className="min-w-0">
-                                                    <p className="text-sm font-medium">
-                                                        {formatEnum(
-                                                            record.type,
-                                                        )}
-                                                    </p>
-
-                                                    {record.description && (
-                                                        <p className="truncate text-xs text-muted-foreground">
-                                                            {
-                                                                record.description
-                                                            }
-                                                        </p>
+                                    {serviceVisit.items.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2.5"
+                                        >
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium">
+                                                    {formatEnum(
+                                                        item.type,
                                                     )}
-                                                </div>
+                                                </p>
 
-                                                <div className="ml-4 shrink-0 text-right">
-                                                    {record.cost !==
-                                                        null && (
-                                                        <p className="text-sm font-medium">
-                                                            {formatCost(
-                                                                record.cost,
-                                                            )}
-                                                        </p>
-                                                    )}
-
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {formatStatus(
-                                                            record.status,
-                                                        )}
+                                                {item.description && (
+                                                    <p className="truncate text-xs text-muted-foreground">
+                                                        {
+                                                            item.description
+                                                        }
                                                     </p>
-                                                </div>
+                                                )}
                                             </div>
-                                        ),
-                                    )}
+
+                                            <div className="ml-4 shrink-0 text-right">
+                                                {item.cost !== null && (
+                                                    <p className="text-sm font-medium">
+                                                        {formatCost(
+                                                            item.cost,
+                                                        )}
+                                                    </p>
+                                                )}
+
+                                                <p className="text-xs text-muted-foreground">
+                                                    {formatStatus(
+                                                        item.status,
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
 
-                                {/* =================================================
-                                    Actions
-                                ================================================= */}
+                                {serviceVisit.notes && (
+                                    <p className="whitespace-pre-wrap rounded-md bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                                        {serviceVisit.notes}
+                                    </p>
+                                )}
 
                                 <div className="flex items-center justify-between border-t pt-4">
                                     <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={() =>
-                                            toggleGroup(
-                                                group.key,
+                                            toggleVisit(
+                                                serviceVisit.id,
                                             )
                                         }
                                     >
@@ -437,142 +303,107 @@ export function MaintenanceList({
                                         )}
                                     </Button>
 
-                                    {group.records.length ===
-                                        1 && (
+                                    <div className="flex justify-end gap-1">
                                         <EditMaintenanceDialog
-                                            maintenance={
-                                                group.records[0]
-                                            }
+                                            serviceVisit={serviceVisit}
                                         />
-                                    )}
+
+                                        <DeleteMaintenanceDialog
+                                            serviceVisit={serviceVisit}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* =================================================
-                                Expanded Details
-                            ================================================= */}
 
                             {isExpanded && (
                                 <div className="border-t bg-muted/20 px-5 py-5">
                                     <div className="space-y-5">
-                                        {group.records.map(
-                                            (record) => (
-                                                <div
-                                                    key={record.id}
-                                                    className="space-y-4 border-b pb-5 last:border-b-0 last:pb-0"
-                                                >
-                                                    {/* Item header */}
-                                                    <div className="flex items-start justify-between gap-4">
-                                                        <div className="min-w-0">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <h4 className="font-medium">
-                                                                    {formatEnum(
-                                                                        record.type,
-                                                                    )}
-                                                                </h4>
-
-                                                                {record.schedule_status && (
-                                                                    <Badge>
-                                                                        {formatStatus(
-                                                                            record.schedule_status,
-                                                                        )}
-                                                                    </Badge>
+                                        {serviceVisit.items.map((item) => (
+                                            <div
+                                                key={item.id}
+                                                className="space-y-4 border-b pb-5 last:border-b-0 last:pb-0"
+                                            >
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="min-w-0">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <h4 className="font-medium">
+                                                                {formatEnum(
+                                                                    item.type,
                                                                 )}
-                                                            </div>
+                                                            </h4>
 
-                                                            {record.description && (
-                                                                <p className="mt-1 text-sm text-muted-foreground">
-                                                                    {
-                                                                        record.description
-                                                                    }
-                                                                </p>
+                                                            {item.schedule_status && (
+                                                                <Badge>
+                                                                    {formatStatus(
+                                                                        item.schedule_status,
+                                                                    )}
+                                                                </Badge>
                                                             )}
                                                         </div>
 
-                                                        {record.cost !==
-                                                            null && (
-                                                            <p className="shrink-0 text-sm font-medium">
-                                                                {formatCost(
-                                                                    record.cost,
-                                                                )}
+                                                        {item.description && (
+                                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                                {
+                                                                    item.description
+                                                                }
                                                             </p>
                                                         )}
                                                     </div>
 
-                                                    {/* =================================================
-                                                        Next Service
-                                                    ================================================= */}
-
-                                                    {(record.next_due_date !==
-                                                        null ||
-                                                        record.next_due_mileage !==
-                                                            null) && (
-                                                        <div className="space-y-1">
-                                                            <p className="text-xs font-medium text-muted-foreground">
-                                                                Next Service
-                                                            </p>
-
-                                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                                                                {record.next_due_date !==
-                                                                    null && (
-                                                                    <span>
-                                                                        {formatDate(
-                                                                            record.next_due_date,
-                                                                        )}
-                                                                    </span>
-                                                                )}
-
-                                                                {record.next_due_mileage !==
-                                                                    null && (
-                                                                    <span>
-                                                                        {record.next_due_mileage.toLocaleString(
-                                                                            "en-MY",
-                                                                        )}{" "}
-                                                                        km
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
+                                                    {item.cost !== null && (
+                                                        <p className="shrink-0 text-sm font-medium">
+                                                            {formatCost(
+                                                                item.cost,
+                                                            )}
+                                                        </p>
                                                     )}
-
-                                                    {/* =================================================
-                                                        Notes
-                                                    ================================================= */}
-
-                                                    {record.notes && (
-                                                        <div className="space-y-1">
-                                                            <p className="text-xs font-medium text-muted-foreground">
-                                                                Notes
-                                                            </p>
-
-                                                            <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                                                                {
-                                                                    record.notes
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                    )}
-
-                                                    {/* =================================================
-                                                        Item Actions
-                                                    ================================================= */}
-
-                                                    <div className="flex justify-end gap-1">
-                                                        <EditMaintenanceDialog
-                                                            maintenance={
-                                                                record
-                                                            }
-                                                        />
-
-                                                        <DeleteMaintenanceDialog
-                                                            maintenance={
-                                                                record
-                                                            }
-                                                        />
-                                                    </div>
                                                 </div>
-                                            ),
-                                        )}
+
+                                                {(item.next_due_date !==
+                                                    null ||
+                                                    item.next_due_mileage !==
+                                                        null) && (
+                                                    <div className="space-y-1">
+                                                        <p className="text-xs font-medium text-muted-foreground">
+                                                            Next Service
+                                                        </p>
+
+                                                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                                                            {item.next_due_date !==
+                                                                null && (
+                                                                <span>
+                                                                    {formatDate(
+                                                                        item.next_due_date,
+                                                                    )}
+                                                                </span>
+                                                            )}
+
+                                                            {item.next_due_mileage !==
+                                                                null && (
+                                                                <span>
+                                                                    {item.next_due_mileage.toLocaleString(
+                                                                        "en-MY",
+                                                                    )}{" "}
+                                                                    km
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {item.notes && (
+                                                    <div className="space-y-1">
+                                                        <p className="text-xs font-medium text-muted-foreground">
+                                                            Notes
+                                                        </p>
+
+                                                        <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                                                            {item.notes}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}

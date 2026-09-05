@@ -8,7 +8,7 @@ import { maintenanceApi } from "../api/maintenanceApi";
 
 import type {
     CreateServiceVisitPayload,
-    UpdateMaintenancePayload,
+    UpdateServiceVisitPayload,
 } from "../types/maintenance";
 
 const MAINTENANCE_QUERY_KEY = ["maintenance"] as const;
@@ -16,7 +16,7 @@ const SERVICE_HISTORY_QUERY_KEY = ["service-history"] as const;
 
 
 // ============================================================
-// Get Maintenance
+// Get Maintenance / Service Visits
 // ============================================================
 
 export const useMaintenance = (vehicleId?: string) => {
@@ -33,26 +33,27 @@ export const useMaintenance = (vehicleId?: string) => {
 
 
 // ============================================================
-// Get Single Maintenance Record
+// Get Single Service Visit
 // ============================================================
 
 export const useMaintenanceRecord = (
-    maintenanceId: string,
+    serviceVisitId: string,
 ) => {
     return useQuery({
         queryKey: [
             ...MAINTENANCE_QUERY_KEY,
             "record",
-            maintenanceId,
+            serviceVisitId,
         ],
-        queryFn: () => maintenanceApi.getById(maintenanceId),
-        enabled: Boolean(maintenanceId),
+        queryFn: () =>
+            maintenanceApi.getById(serviceVisitId),
+        enabled: Boolean(serviceVisitId),
     });
 };
 
 
 // ============================================================
-// Get All Maintenance
+// Get All Maintenance / Service Visits
 // ============================================================
 
 export const useAllMaintenance = () => {
@@ -61,6 +62,11 @@ export const useAllMaintenance = () => {
         queryFn: () => maintenanceApi.getAll(),
     });
 };
+
+
+// ============================================================
+// Get Single Service Visit
+// ============================================================
 
 export const useServiceVisit = (
     serviceVisitId: string,
@@ -71,10 +77,12 @@ export const useServiceVisit = (
             "visit",
             serviceVisitId,
         ],
-        queryFn: () => maintenanceApi.getById(serviceVisitId),
+        queryFn: () =>
+            maintenanceApi.getById(serviceVisitId),
         enabled: Boolean(serviceVisitId),
     });
 };
+
 
 // ============================================================
 // Create Service Visit
@@ -97,15 +105,16 @@ export const useCreateServiceVisit = () => {
     return useMutation({
         mutationFn: (
             serviceVisit: CreateServiceVisitPayload,
-        ) => maintenanceApi.createServiceVisit(serviceVisit),
+        ) =>
+            maintenanceApi.createServiceVisit(
+                serviceVisit,
+            ),
 
         onSuccess: () => {
-            // Refresh maintenance data
             queryClient.invalidateQueries({
                 queryKey: MAINTENANCE_QUERY_KEY,
             });
 
-            // Refresh service history timeline
             queryClient.invalidateQueries({
                 queryKey: SERVICE_HISTORY_QUERY_KEY,
             });
@@ -115,41 +124,58 @@ export const useCreateServiceVisit = () => {
 
 
 // ============================================================
-// Update Maintenance Item
+// Update Service Visit
+// ============================================================
+//
+// Updates the complete service visit.
+//
+// The backend endpoint is:
+//
+// PUT /maintenance/{service_visit_id}
+//
 // ============================================================
 
-export const useUpdateMaintenance = () => {
+export const useUpdateServiceVisit = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: ({
-            maintenanceId,
-            maintenance,
+            serviceVisitId,
+            serviceVisit,
         }: {
-            maintenanceId: string;
-            maintenance: UpdateMaintenancePayload;
+            serviceVisitId: string;
+            serviceVisit: UpdateServiceVisitPayload;
         }) =>
-            maintenanceApi.update(
-                maintenanceId,
-                maintenance,
+            maintenanceApi.updateServiceVisit(
+                serviceVisitId,
+                serviceVisit,
             ),
 
         onSuccess: (_, variables) => {
-            // Refresh maintenance lists
+            // Refresh maintenance list
             queryClient.invalidateQueries({
                 queryKey: MAINTENANCE_QUERY_KEY,
             });
 
-            // Refresh individual record
+            // Refresh this specific service visit
             queryClient.invalidateQueries({
                 queryKey: [
                     ...MAINTENANCE_QUERY_KEY,
                     "record",
-                    variables.maintenanceId,
+                    variables.serviceVisitId,
                 ],
             });
 
-            // Service history may also have changed
+            // Refresh service visit query
+            queryClient.invalidateQueries({
+                queryKey: [
+                    ...MAINTENANCE_QUERY_KEY,
+                    "visit",
+                    variables.serviceVisitId,
+                ],
+            });
+
+            // Refresh service history
             queryClient.invalidateQueries({
                 queryKey: SERVICE_HISTORY_QUERY_KEY,
             });
@@ -159,7 +185,7 @@ export const useUpdateMaintenance = () => {
 
 
 // ============================================================
-// Delete Maintenance Item
+// Delete Service Visit
 // ============================================================
 
 export const useDeleteMaintenance = () => {
@@ -167,16 +193,17 @@ export const useDeleteMaintenance = () => {
 
     return useMutation({
         mutationFn: (
-            maintenanceId: string,
-        ) => maintenanceApi.delete(maintenanceId),
+            serviceVisitId: string,
+        ) =>
+            maintenanceApi.delete(
+                serviceVisitId,
+            ),
 
         onSuccess: () => {
-            // Refresh maintenance lists
             queryClient.invalidateQueries({
                 queryKey: MAINTENANCE_QUERY_KEY,
             });
 
-            // Refresh service history
             queryClient.invalidateQueries({
                 queryKey: SERVICE_HISTORY_QUERY_KEY,
             });

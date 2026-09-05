@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import { isAxiosError } from "axios";
 
@@ -14,15 +15,20 @@ import {
 import { toast } from "@/shared/components/ui/toast";
 
 import { useDeleteMaintenance } from "../hooks/useMaintenance";
-import type { MaintenanceListItem } from "../types/maintenance";
-import { useState } from "react";
+import type { ServiceVisit } from "../types/maintenance";
 
 interface DeleteMaintenanceDialogProps {
-    maintenance: MaintenanceListItem;
+    serviceVisit: ServiceVisit;
+}
+
+function formatDate(value: string) {
+    return new Intl.DateTimeFormat("en-MY", {
+        dateStyle: "medium",
+    }).format(new Date(value));
 }
 
 export function DeleteMaintenanceDialog({
-    maintenance,
+    serviceVisit,
 }: DeleteMaintenanceDialogProps) {
     const [open, setOpen] = useState(false);
 
@@ -31,21 +37,24 @@ export function DeleteMaintenanceDialog({
     const handleDelete = async () => {
         try {
             await deleteMaintenance.mutateAsync(
-                maintenance.id
+                serviceVisit.id,
             );
 
             toast.add({
-                title: "Maintenance Deleted.",
-                description: "The maintenance record has been deleted successfully",
-                type:"success",
+                title: "Service visit deleted",
+                description:
+                    "The maintenance service visit has been deleted successfully.",
+                type: "success",
             });
 
-            setOpen(false)
-        }catch (error) {
-            let message = "Unable to delete the maintenance record. Please try again.";
+            setOpen(false);
+        } catch (error) {
+            let message =
+                "Unable to delete the service visit. Please try again.";
 
             if (isAxiosError(error)) {
-                const detail = error.response?.data?.detail;
+                const detail =
+                    error.response?.data?.detail;
 
                 if (typeof detail === "string") {
                     message = detail;
@@ -53,25 +62,33 @@ export function DeleteMaintenanceDialog({
             }
 
             toast.add({
-                title: "Failed to delete maintenance",
+                title: "Failed to delete service visit",
                 description: message,
                 type: "error",
-            })
+            });
         }
     };
 
     const handleOpenChange = (value: boolean) => {
-        if(!deleteMaintenance.isPending) {
+        if (!deleteMaintenance.isPending) {
             setOpen(value);
         }
-    }
+    };
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger 
+        <Dialog
+            open={open}
+            onOpenChange={handleOpenChange}
+        >
+            <DialogTrigger
                 render={
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" aria-label="Delete Maintenance">
-                        <Trash2 className="size-4"/>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        aria-label="Delete service visit"
+                    >
+                        <Trash2 className="size-4" />
                     </Button>
                 }
             />
@@ -79,14 +96,21 @@ export function DeleteMaintenanceDialog({
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>
-                        Delete Maintenance Record?
+                        Delete Service Visit?
                     </DialogTitle>
 
                     <DialogDescription>
-                        Are you sure you want to delete{" "}
+                        Are you sure you want to delete the{" "}
                         <span className="font-medium text-foreground">
-                            {maintenance.description}
-                        </span>
+                            {formatDate(serviceVisit.service_date)}
+                        </span>{" "}
+                        service visit with{" "}
+                        <span className="font-medium text-foreground">
+                            {serviceVisit.items.length}
+                        </span>{" "}
+                        {serviceVisit.items.length === 1
+                            ? "item"
+                            : "items"}
                         ? This action cannot be undone.
                     </DialogDescription>
                 </DialogHeader>
@@ -118,5 +142,5 @@ export function DeleteMaintenanceDialog({
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-    )
+    );
 }

@@ -3,13 +3,15 @@ import api from "@/shared/api/axios";
 import type {
     CreateServiceVisitPayload,
     DeleteMaintenanceResponse,
-    Maintenance,
     ServiceVisit,
-    UpdateMaintenancePayload,
+    UpdateServiceVisitPayload,
 } from "../types/maintenance";
 
 export const maintenanceApi = {
+    // ============================================================
     // Get all service visits for a vehicle
+    // ============================================================
+
     getAll: async (
         vehicleId?: string,
     ): Promise<ServiceVisit[]> => {
@@ -25,18 +27,24 @@ export const maintenanceApi = {
         return response.data;
     },
 
-    // Get a single maintenance item
+    // ============================================================
+    // Get a single service visit
+    // ============================================================
+
     getById: async (
-        maintenanceId: string,
-    ): Promise<Maintenance> => {
-        const response = await api.get<Maintenance>(
-            `/maintenance/${maintenanceId}`,
+        serviceVisitId: string,
+    ): Promise<ServiceVisit> => {
+        const response = await api.get<ServiceVisit>(
+            `/maintenance/${serviceVisitId}`,
         );
 
         return response.data;
     },
 
+    // ============================================================
     // Create a complete service visit
+    // ============================================================
+
     createServiceVisit: async (
         serviceVisit: CreateServiceVisitPayload,
     ): Promise<ServiceVisit> => {
@@ -48,35 +56,42 @@ export const maintenanceApi = {
         return response.data;
     },
 
-    // Update an individual maintenance item
-    update: async (
-        maintenanceId: string,
-        maintenance: UpdateMaintenancePayload,
-    ): Promise<Maintenance> => {
+    // ============================================================
+    // Update a complete service visit
+    // ============================================================
+
+    updateServiceVisit: async (
+        serviceVisitId: string,
+        serviceVisit: UpdateServiceVisitPayload,
+    ): Promise<ServiceVisit> => {
         try {
-            const response = await api.put<Maintenance>(
-                `/maintenance/${maintenanceId}`,
-                maintenance,
+            const response = await api.put<ServiceVisit>(
+                `/maintenance/${serviceVisitId}`,
+                serviceVisit,
             );
 
             return response.data;
         } catch (error: any) {
             console.error(
-                "UPDATE MAINTENANCE ERROR:",
-                error.response?.data ?? error
+                "UPDATE SERVICE VISIT ERROR:",
+                error.response?.data ?? error,
             );
 
             throw error;
         }
     },
 
-    // Delete an individual maintenance item
+    // ============================================================
+    // Delete a service visit
+    // ============================================================
+
     delete: async (
-        maintenanceId: string,
+        serviceVisitId: string,
     ): Promise<DeleteMaintenanceResponse> => {
-        const response = await api.delete<DeleteMaintenanceResponse>(
-            `/maintenance/${maintenanceId}`,
-        );
+        const response =
+            await api.delete<DeleteMaintenanceResponse>(
+                `/maintenance/${serviceVisitId}`,
+            );
 
         return response.data;
     },

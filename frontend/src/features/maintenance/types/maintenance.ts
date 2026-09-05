@@ -22,12 +22,16 @@ export type MaintenanceScheduleStatus =
     | "UPCOMING"
     | "OVERDUE";
 
+
+// ============================================================
 // Maintenance Item
+// ============================================================
 
 export interface MaintenanceItem {
     id: string;
 
     type: MaintenanceType;
+
     description: string | null;
 
     next_due_date: string | null;
@@ -40,8 +44,34 @@ export interface MaintenanceItem {
     schedule_status: MaintenanceScheduleStatus | null;
 }
 
+
+// ============================================================
+// Derived Maintenance List Item
+// ============================================================
+
+export interface MaintenanceListItem extends MaintenanceItem {
+    service_visit_id: string;
+
+    user_id: string;
+    vehicle_id: string;
+
+    service_date: string;
+    mileage_at_service: number;
+
+    workshop: string | null;
+
+    created_at: string;
+    updated_at: string;
+}
+
+
+// ============================================================
+// Create Maintenance Item
+// ============================================================
+
 export interface CreateMaintenanceItemPayload {
     type: MaintenanceType;
+
     description?: string | null;
 
     next_due_date?: string | null;
@@ -51,22 +81,14 @@ export interface CreateMaintenanceItemPayload {
     notes?: string | null;
 }
 
-export interface UpdateMaintenanceItemPayload {
-    type?: MaintenanceType;
-    description?: string | null;
 
-    next_due_date?: string | null;
-    next_due_mileage?: number | null;
-
-    cost?: number | null;
-    notes?: string | null;
-}
-
-export interface MaintenanceItemResponse extends MaintenanceItem {}
-
+// ============================================================
 // Service Visit
+// ============================================================
+
 export interface ServiceVisit {
     id: string;
+
     user_id: string;
     vehicle_id: string;
 
@@ -82,6 +104,11 @@ export interface ServiceVisit {
     updated_at: string;
 }
 
+
+// ============================================================
+// Create Service Visit
+// ============================================================
+
 export interface CreateServiceVisitPayload {
     vehicle_id: string;
 
@@ -94,70 +121,27 @@ export interface CreateServiceVisitPayload {
     items: CreateMaintenanceItemPayload[];
 }
 
+
+// ============================================================
+// Update Service Visit
+// ============================================================
+
 export interface UpdateServiceVisitPayload {
     service_date?: string;
+
     mileage_at_service?: number;
 
     workshop?: string | null;
+
     notes?: string | null;
 
-    items?: UpdateMaintenanceItemPayload[];
+    items?: CreateMaintenanceItemPayload[];
 }
+
 
 // ============================================================
-// Compatibility Types
+// Delete Service Visit
 // ============================================================
-//
-// These aliases allow existing maintenance UI components to
-// continue working while the frontend is being migrated to
-// the Service Visit + Maintenance Item architecture.
-
-export interface Maintenance extends MaintenanceItem {
-    user_id: string;
-    vehicle_id: string;
-
-    service_date: string;
-    mileage_at_service: number;
-
-    workshop: string | null;
-
-    created_at: string;
-    updated_at: string;
-}
-
-export type MaintenanceListItem = Maintenance;
-
-export interface CreateMaintenancePayload {
-    vehicle_id: string;
-
-    type: MaintenanceType;
-    description: string | null;
-
-    service_date: string;
-    mileage_at_service: number;
-
-    next_due_date?: string | null;
-    next_due_mileage?: number | null;
-
-    cost?: number | null;
-    workshop?: string | null;
-    notes?: string | null;
-}
-
-export interface UpdateMaintenancePayload {
-    type?: MaintenanceType;
-    description?: string | null;
-
-    service_date?: string;
-    mileage_at_service?: number;
-
-    next_due_date?: string | null;
-    next_due_mileage?: number | null;
-
-    cost?: number | null;
-    workshop?: string | null;
-    notes?: string | null;
-}
 
 export interface DeleteMaintenanceResponse {
     success: boolean;
