@@ -4,6 +4,7 @@ import { Button } from "@/shared/components/ui/button";
 
 import { useReceipts } from "../hooks/useReceipts";
 import { ReceiptUploadDialog } from "./ReceiptUploadDialog";
+import { ReceiptPreviewDialog } from "./ReceiptPreviewDialog";
 
 interface ServiceVisitReceiptsProps {
     vehicleId: string;
@@ -100,7 +101,7 @@ export function ServiceVisitReceipts({
                                     </div>
                                 </div>
 
-                                <Button
+                                {/* <Button
                                     variant="ghost"
                                     size="sm"
                                     render={
@@ -112,7 +113,9 @@ export function ServiceVisitReceipts({
                                             View
                                         </a>
                                     }
-                                />
+                                /> */}
+
+                                <ReceiptPreviewDialog receipt={receipt} />
                             </div>
                         );
                     })}
