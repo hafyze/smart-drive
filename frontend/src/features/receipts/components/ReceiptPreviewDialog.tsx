@@ -1,4 +1,4 @@
-import { FileText, ImageIcon } from "lucide-react";
+import { FileText } from "lucide-react";
 
 import { Button } from "@/shared/components/ui/button";
 import {

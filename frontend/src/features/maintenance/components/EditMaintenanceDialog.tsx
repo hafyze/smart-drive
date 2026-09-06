@@ -36,6 +36,7 @@ import type {
     MaintenanceType,
     ServiceVisit,
 } from "../types/maintenance";
+import { ScrollArea } from "@/shared/components/ui/scroll-area";
 
 interface EditMaintenanceDialogProps {
     serviceVisit: ServiceVisit;
@@ -214,337 +215,232 @@ export function EditMaintenanceDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <form
-                    onSubmit={handleSubmit(onSubmit)}
-                    className="space-y-6"
-                >
-                    <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
-                        <div>
-                            <h3 className="font-semibold">
-                                Service Visit
-                            </h3>
-
-                            <p className="text-sm text-muted-foreground">
-                                Information shared by all maintenance items
-                                performed during this visit.
-                            </p>
-                        </div>
-
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="edit_service_date">
-                                    Service Date
-                                </Label>
-
-                                <Input
-                                    id="edit_service_date"
-                                    type="date"
-                                    {...register("service_date")}
-                                />
-
-                                {errors.service_date && (
-                                    <p className="text-sm text-destructive">
-                                        {errors.service_date.message}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="edit_mileage_at_service">
-                                    Mileage
-                                </Label>
-
-                                <Input
-                                    id="edit_mileage_at_service"
-                                    type="number"
-                                    min="0"
-                                    {...register(
-                                        "mileage_at_service",
-                                        {
-                                            valueAsNumber: true,
-                                        },
-                                    )}
-                                />
-
-                                {errors.mileage_at_service && (
-                                    <p className="text-sm text-destructive">
-                                        {
-                                            errors
-                                                .mileage_at_service
-                                                .message
-                                        }
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="edit_workshop">
-                                Workshop
-                            </Label>
-
-                            <Input
-                                id="edit_workshop"
-                                placeholder="e.g. ABC Auto Service"
-                                {...register("workshop")}
-                            />
-
-                            {errors.workshop && (
-                                <p className="text-sm text-destructive">
-                                    {errors.workshop.message}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="edit_visit_notes">
-                                Visit Notes
-                            </Label>
-
-                            <Textarea
-                                id="edit_visit_notes"
-                                placeholder="General notes about this service visit..."
-                                {...register("notes")}
-                            />
-
-                            {errors.notes && (
-                                <p className="text-sm text-destructive">
-                                    {errors.notes.message}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-start justify-between gap-4">
+                <ScrollArea className="max-h-[70vh] pr-4">
+                    <form
+                        onSubmit={handleSubmit(onSubmit)}
+                        className="space-y-6"
+                    >
+                        <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
                             <div>
                                 <h3 className="font-semibold">
-                                    Maintenance Items
+                                    Service Visit
                                 </h3>
 
                                 <p className="text-sm text-muted-foreground">
-                                    Add everything that was serviced during
-                                    this visit.
+                                    Information shared by all maintenance items
+                                    performed during this visit.
                                 </p>
                             </div>
 
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                    append({
-                                        ...defaultItem,
-                                    })
-                                }
-                            >
-                                <Plus className="size-4" />
-                                Add Item
-                            </Button>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit_service_date">
+                                        Service Date
+                                    </Label>
+
+                                    <Input
+                                        id="edit_service_date"
+                                        type="date"
+                                        {...register("service_date")}
+                                    />
+
+                                    {errors.service_date && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.service_date.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit_mileage_at_service">
+                                        Mileage
+                                    </Label>
+
+                                    <Input
+                                        id="edit_mileage_at_service"
+                                        type="number"
+                                        min="0"
+                                        {...register(
+                                            "mileage_at_service",
+                                            {
+                                                valueAsNumber: true,
+                                            },
+                                        )}
+                                    />
+
+                                    {errors.mileage_at_service && (
+                                        <p className="text-sm text-destructive">
+                                            {
+                                                errors
+                                                    .mileage_at_service
+                                                    .message
+                                            }
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="edit_workshop">
+                                    Workshop
+                                </Label>
+
+                                <Input
+                                    id="edit_workshop"
+                                    placeholder="e.g. ABC Auto Service"
+                                    {...register("workshop")}
+                                />
+
+                                {errors.workshop && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.workshop.message}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="edit_visit_notes">
+                                    Visit Notes
+                                </Label>
+
+                                <Textarea
+                                    id="edit_visit_notes"
+                                    placeholder="General notes about this service visit..."
+                                    {...register("notes")}
+                                />
+
+                                {errors.notes && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.notes.message}
+                                    </p>
+                                )}
+                            </div>
                         </div>
 
                         <div className="space-y-4">
-                            {fields.map((field, index) => {
-                                const itemErrors =
-                                    errors.items?.[index];
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <h3 className="font-semibold">
+                                        Maintenance Items
+                                    </h3>
 
-                                const selectedType = watch(
-                                    `items.${index}.type`,
-                                );
+                                    <p className="text-sm text-muted-foreground">
+                                        Add everything that was serviced during
+                                        this visit.
+                                    </p>
+                                </div>
 
-                                return (
-                                    <div
-                                        key={field.id}
-                                        className="space-y-5 rounded-xl border p-4"
-                                    >
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
-                                                    <Wrench className="size-4" />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        append({
+                                            ...defaultItem,
+                                        })
+                                    }
+                                >
+                                    <Plus className="size-4" />
+                                    Add Item
+                                </Button>
+                            </div>
+
+                            <div className="space-y-4">
+                                {fields.map((field, index) => {
+                                    const itemErrors =
+                                        errors.items?.[index];
+
+                                    const selectedType = watch(
+                                        `items.${index}.type`,
+                                    );
+
+                                    return (
+                                        <div
+                                            key={field.id}
+                                            className="space-y-5 rounded-xl border p-4"
+                                        >
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
+                                                        <Wrench className="size-4" />
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="font-medium">
+                                                            Maintenance Item{" "}
+                                                            {index + 1}
+                                                        </p>
+
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Configure this item's
+                                                            service interval
+                                                        </p>
+                                                    </div>
                                                 </div>
 
-                                                <div>
-                                                    <p className="font-medium">
-                                                        Maintenance Item{" "}
-                                                        {index + 1}
-                                                    </p>
-
-                                                    <p className="text-xs text-muted-foreground">
-                                                        Configure this item's
-                                                        service interval
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {fields.length > 1 && (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-muted-foreground hover:text-destructive"
-                                                    onClick={() =>
-                                                        remove(index)
-                                                    }
-                                                    aria-label={`Remove maintenance item ${index + 1}`}
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
-                                            )}
-                                        </div>
-
-                                        <div className="grid gap-4 sm:grid-cols-2">
-                                            <div className="space-y-2">
-                                                <Label>
-                                                    Maintenance Type
-                                                </Label>
-
-                                                <Select
-                                                    value={selectedType}
-                                                    onValueChange={(value) =>
-                                                        setValue(
-                                                            `items.${index}.type`,
-                                                            value as MaintenanceType,
-                                                            {
-                                                                shouldValidate:
-                                                                    true,
-                                                            },
-                                                        )
-                                                    }
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select maintenance type" />
-                                                    </SelectTrigger>
-
-                                                    <SelectContent>
-                                                        {maintenanceTypes.map(
-                                                            (type) => (
-                                                                <SelectItem
-                                                                    key={
-                                                                        type.value
-                                                                    }
-                                                                    value={
-                                                                        type.value
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        type.label
-                                                                    }
-                                                                </SelectItem>
-                                                            ),
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
-
-                                                {itemErrors?.type && (
-                                                    <p className="text-sm text-destructive">
-                                                        {
-                                                            itemErrors.type
-                                                                .message
+                                                {fields.length > 1 && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-muted-foreground hover:text-destructive"
+                                                        onClick={() =>
+                                                            remove(index)
                                                         }
-                                                    </p>
+                                                        aria-label={`Remove maintenance item ${index + 1}`}
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </Button>
                                                 )}
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label
-                                                    htmlFor={`edit_items.${index}.cost`}
-                                                >
-                                                    Cost
-                                                </Label>
-
-                                                <Input
-                                                    id={`edit_items.${index}.cost`}
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
-                                                    placeholder="0.00"
-                                                    {...register(
-                                                        `items.${index}.cost`,
-                                                        {
-                                                            setValueAs:
-                                                                (value) =>
-                                                                    value ===
-                                                                    ""
-                                                                        ? undefined
-                                                                        : Number(
-                                                                              value,
-                                                                          ),
-                                                        },
-                                                    )}
-                                                />
-
-                                                {itemErrors?.cost && (
-                                                    <p className="text-sm text-destructive">
-                                                        {
-                                                            itemErrors.cost
-                                                                .message
-                                                        }
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label
-                                                htmlFor={`edit_items.${index}.description`}
-                                            >
-                                                Description
-                                            </Label>
-
-                                            <Input
-                                                id={`edit_items.${index}.description`}
-                                                placeholder="e.g. Fully synthetic 5W-30"
-                                                {...register(
-                                                    `items.${index}.description`,
-                                                )}
-                                            />
-
-                                            {itemErrors?.description && (
-                                                <p className="text-sm text-destructive">
-                                                    {
-                                                        itemErrors
-                                                            .description
-                                                            .message
-                                                    }
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            <div>
-                                                <Label>
-                                                    Next Service
-                                                </Label>
-
-                                                <p className="text-xs text-muted-foreground">
-                                                    Leave either field empty if
-                                                    there is no scheduled next
-                                                    service.
-                                                </p>
                                             </div>
 
                                             <div className="grid gap-4 sm:grid-cols-2">
                                                 <div className="space-y-2">
-                                                    <Label
-                                                        htmlFor={`edit_items.${index}.next_due_date`}
-                                                        className="text-sm font-normal text-muted-foreground"
-                                                    >
-                                                        Due Date
+                                                    <Label>
+                                                        Maintenance Type
                                                     </Label>
 
-                                                    <Input
-                                                        id={`edit_items.${index}.next_due_date`}
-                                                        type="date"
-                                                        {...register(
-                                                            `items.${index}.next_due_date`,
-                                                        )}
-                                                    />
+                                                    <Select
+                                                        value={selectedType}
+                                                        onValueChange={(value) =>
+                                                            setValue(
+                                                                `items.${index}.type`,
+                                                                value as MaintenanceType,
+                                                                {
+                                                                    shouldValidate:
+                                                                        true,
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select maintenance type" />
+                                                        </SelectTrigger>
 
-                                                    {itemErrors?.next_due_date && (
+                                                        <SelectContent>
+                                                            {maintenanceTypes.map(
+                                                                (type) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            type.value
+                                                                        }
+                                                                        value={
+                                                                            type.value
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            type.label
+                                                                        }
+                                                                    </SelectItem>
+                                                                ),
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+
+                                                    {itemErrors?.type && (
                                                         <p className="text-sm text-destructive">
                                                             {
-                                                                itemErrors
-                                                                    .next_due_date
+                                                                itemErrors.type
                                                                     .message
                                                             }
                                                         </p>
@@ -553,108 +449,215 @@ export function EditMaintenanceDialog({
 
                                                 <div className="space-y-2">
                                                     <Label
-                                                        htmlFor={`edit_items.${index}.next_due_mileage`}
-                                                        className="text-sm font-normal text-muted-foreground"
+                                                        htmlFor={`edit_items.${index}.cost`}
                                                     >
-                                                        Due Mileage
+                                                        Cost
                                                     </Label>
 
                                                     <Input
-                                                        id={`edit_items.${index}.next_due_mileage`}
+                                                        id={`edit_items.${index}.cost`}
                                                         type="number"
                                                         min="0"
-                                                        placeholder="e.g. 60000"
+                                                        step="0.01"
+                                                        placeholder="0.00"
                                                         {...register(
-                                                            `items.${index}.next_due_mileage`,
+                                                            `items.${index}.cost`,
                                                             {
                                                                 setValueAs:
-                                                                    (
-                                                                        value,
-                                                                    ) =>
+                                                                    (value) =>
                                                                         value ===
                                                                         ""
                                                                             ? undefined
                                                                             : Number(
-                                                                                  value,
-                                                                              ),
+                                                                                value,
+                                                                            ),
                                                             },
                                                         )}
                                                     />
 
-                                                    {itemErrors?.next_due_mileage && (
+                                                    {itemErrors?.cost && (
                                                         <p className="text-sm text-destructive">
                                                             {
-                                                                itemErrors
-                                                                    .next_due_mileage
+                                                                itemErrors.cost
                                                                     .message
                                                             }
                                                         </p>
                                                     )}
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="space-y-2">
-                                            <Label
-                                                htmlFor={`edit_items.${index}.notes`}
-                                            >
-                                                Item Notes
-                                            </Label>
+                                            <div className="space-y-2">
+                                                <Label
+                                                    htmlFor={`edit_items.${index}.description`}
+                                                >
+                                                    Description
+                                                </Label>
 
-                                            <Textarea
-                                                id={`edit_items.${index}.notes`}
-                                                placeholder="Additional notes for this maintenance item..."
-                                                {...register(
-                                                    `items.${index}.notes`,
+                                                <Input
+                                                    id={`edit_items.${index}.description`}
+                                                    placeholder="e.g. Fully synthetic 5W-30"
+                                                    {...register(
+                                                        `items.${index}.description`,
+                                                    )}
+                                                />
+
+                                                {itemErrors?.description && (
+                                                    <p className="text-sm text-destructive">
+                                                        {
+                                                            itemErrors
+                                                                .description
+                                                                .message
+                                                        }
+                                                    </p>
                                                 )}
-                                            />
+                                            </div>
 
-                                            {itemErrors?.notes && (
-                                                <p className="text-sm text-destructive">
-                                                    {
-                                                        itemErrors.notes
-                                                            .message
-                                                    }
-                                                </p>
-                                            )}
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <Label>
+                                                        Next Service
+                                                    </Label>
+
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Leave either field empty if
+                                                        there is no scheduled next
+                                                        service.
+                                                    </p>
+                                                </div>
+
+                                                <div className="grid gap-4 sm:grid-cols-2">
+                                                    <div className="space-y-2">
+                                                        <Label
+                                                            htmlFor={`edit_items.${index}.next_due_date`}
+                                                            className="text-sm font-normal text-muted-foreground"
+                                                        >
+                                                            Due Date
+                                                        </Label>
+
+                                                        <Input
+                                                            id={`edit_items.${index}.next_due_date`}
+                                                            type="date"
+                                                            {...register(
+                                                                `items.${index}.next_due_date`,
+                                                            )}
+                                                        />
+
+                                                        {itemErrors?.next_due_date && (
+                                                            <p className="text-sm text-destructive">
+                                                                {
+                                                                    itemErrors
+                                                                        .next_due_date
+                                                                        .message
+                                                                }
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <Label
+                                                            htmlFor={`edit_items.${index}.next_due_mileage`}
+                                                            className="text-sm font-normal text-muted-foreground"
+                                                        >
+                                                            Due Mileage
+                                                        </Label>
+
+                                                        <Input
+                                                            id={`edit_items.${index}.next_due_mileage`}
+                                                            type="number"
+                                                            min="0"
+                                                            placeholder="e.g. 60000"
+                                                            {...register(
+                                                                `items.${index}.next_due_mileage`,
+                                                                {
+                                                                    setValueAs:
+                                                                        (
+                                                                            value,
+                                                                        ) =>
+                                                                            value ===
+                                                                            ""
+                                                                                ? undefined
+                                                                                : Number(
+                                                                                    value,
+                                                                                ),
+                                                                },
+                                                            )}
+                                                        />
+
+                                                        {itemErrors?.next_due_mileage && (
+                                                            <p className="text-sm text-destructive">
+                                                                {
+                                                                    itemErrors
+                                                                        .next_due_mileage
+                                                                        .message
+                                                                }
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label
+                                                    htmlFor={`edit_items.${index}.notes`}
+                                                >
+                                                    Item Notes
+                                                </Label>
+
+                                                <Textarea
+                                                    id={`edit_items.${index}.notes`}
+                                                    placeholder="Additional notes for this maintenance item..."
+                                                    {...register(
+                                                        `items.${index}.notes`,
+                                                    )}
+                                                />
+
+                                                {itemErrors?.notes && (
+                                                    <p className="text-sm text-destructive">
+                                                        {
+                                                            itemErrors.notes
+                                                                .message
+                                                        }
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
+
+                            {typeof errors.items?.message ===
+                                "string" && (
+                                <p className="text-sm text-destructive">
+                                    {errors.items.message}
+                                </p>
+                            )}
                         </div>
 
-                        {typeof errors.items?.message ===
-                            "string" && (
-                            <p className="text-sm text-destructive">
-                                {errors.items.message}
-                            </p>
-                        )}
-                    </div>
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={updateServiceVisit.isPending}
+                                onClick={() => handleOpenChange(false)}
+                            >
+                                Cancel
+                            </Button>
 
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={updateServiceVisit.isPending}
-                            onClick={() => handleOpenChange(false)}
-                        >
-                            Cancel
-                        </Button>
+                            <Button
+                                type="submit"
+                                disabled={updateServiceVisit.isPending}
+                            >
+                                {updateServiceVisit.isPending && (
+                                    <Loader2 className="animate-spin" />
+                                )}
 
-                        <Button
-                            type="submit"
-                            disabled={updateServiceVisit.isPending}
-                        >
-                            {updateServiceVisit.isPending && (
-                                <Loader2 className="animate-spin" />
-                            )}
-
-                            {updateServiceVisit.isPending
-                                ? "Saving..."
-                                : "Save Changes"}
-                        </Button>
-                    </DialogFooter>
-                </form>
+                                {updateServiceVisit.isPending
+                                    ? "Saving..."
+                                    : "Save Changes"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </ScrollArea>
             </DialogContent>
         </Dialog>
     );
