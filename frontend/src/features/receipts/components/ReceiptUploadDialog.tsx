@@ -37,16 +37,23 @@ export function ReceiptUploadDialog({
             return;
         }
 
-        await createReceipt.mutateAsync({
-            vehicleId,
-            serviceVisitId,
-            file,
-            notes: notes.trim() || undefined,
-        });
+        try {
+            await createReceipt.mutateAsync({
+                vehicleId,
+                serviceVisitId,
+                file,
+                notes: notes.trim() || undefined,
+            });
 
-        setFile(null);
-        setNotes("");
-        setOpen(false);
+            setFile(null);
+            setNotes("");
+            setOpen(false);
+        } catch (error: any) {
+            console.error(
+                "RECEIPT UPLOAD ERROR:",
+                error.response?.data ?? error,
+            );
+        }
     };
 
     return (
