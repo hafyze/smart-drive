@@ -9,7 +9,9 @@ from app.ai.schemas import (
 from app.routes.auth import (
     get_current_user,
 )
-
+from app.ai.research.factory import (
+    get_research_provider,
+)
 
 router = APIRouter(
     prefix="/ai",
@@ -32,4 +34,26 @@ async def get_vehicle_ai_context(
     return await builder.build(
         vehicle_id=vehicle_id,
         user_id=current_user["id"],
+    )
+
+@router.get(
+    "/research/{vehicle_id}",
+)
+async def research_vehicle(
+    vehicle_id: str,
+    current_user: dict = Depends(
+        get_current_user
+    ),
+):
+    builder = VehicleContextBuilder()
+
+    context = await builder.build(
+        vehicle_id=vehicle_id,
+        user_id=current_user["id"],
+    )
+
+    provider = get_research_provider()
+
+    return await provider.research(
+        context.vehicle.identity
     )
