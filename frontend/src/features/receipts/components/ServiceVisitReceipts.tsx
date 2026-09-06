@@ -1,9 +1,9 @@
 import { FileText, Image, Paperclip } from "lucide-react";
 
-import { Button } from "@/shared/components/ui/button";
-
 import { useReceipts } from "../hooks/useReceipts";
 import { ReceiptUploadDialog } from "./ReceiptUploadDialog";
+import { ReceiptDeleteDialog } from "./ReceiptDeleteDialog";
+import { ReceiptEditDialog } from "./ReceiptEditDialog";
 import { ReceiptPreviewDialog } from "./ReceiptPreviewDialog";
 
 interface ServiceVisitReceiptsProps {
@@ -101,21 +101,19 @@ export function ServiceVisitReceipts({
                                     </div>
                                 </div>
 
-                                {/* <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    render={
-                                        <a
-                                            href={`http://127.0.0.1:8000${receipt.file_url}`}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
-                                            View
-                                        </a>
-                                    }
-                                /> */}
+                                <div className="flex shrink-0 items-center gap-1">
+                                    <ReceiptPreviewDialog
+                                        receipt={receipt}
+                                    />
 
-                                <ReceiptPreviewDialog receipt={receipt} />
+                                    <ReceiptEditDialog
+                                        receipt={receipt}
+                                    />
+
+                                    <ReceiptDeleteDialog
+                                        receipt={receipt}
+                                    />
+                                </div>
                             </div>
                         );
                     })}
