@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 from pydantic import BaseModel
 
@@ -63,3 +63,63 @@ class VehicleMaintenanceContext(BaseModel):
     vehicle: VehicleContext
 
     maintenance: MaintenanceSummary
+
+class MaintenanceRecommendationType(str, Enum):
+    SCHEDULED = "SCHEDULED"
+    PREVENTIVE = "PREVENTIVE"
+    INSPECTION = "INSPECTION"
+
+
+class KnowledgeConfidence(str, Enum):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
+
+
+class MaintenanceSourceType(str, Enum):
+    MANUFACTURER = "MANUFACTURER"
+    OEM = "OEM"
+    TECHNICAL_DATABASE = "TECHNICAL_DATABASE"
+    SPECIALIST = "SPECIALIST"
+
+
+class MaintenanceSource(BaseModel):
+    name: str
+    url: str
+
+    source_type: MaintenanceSourceType
+
+    title: str | None = None
+
+
+class MaintenanceGuidanceItem(BaseModel):
+    key: str
+    name: str
+
+    recommendation_type: MaintenanceRecommendationType
+
+    interval_km: int | None = None
+    interval_months: int | None = None
+
+    starting_mileage: int | None = None
+
+    description: str | None = None
+    reason: str | None = None
+
+    confidence: KnowledgeConfidence
+
+    sources: list[MaintenanceSource] = []
+
+
+class MaintenanceKnowledgeProfile(BaseModel):
+    manufacturer: str
+    model: str
+    variant: str | None = None
+    year: int
+    transmission: str
+
+    vehicle_match_confidence: VehicleIdentityConfidence
+
+    guidance: list[MaintenanceGuidanceItem]
+
+    generated_at: datetime
