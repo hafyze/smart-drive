@@ -2,10 +2,14 @@ from datetime import datetime, timezone
 
 from app.ai.schemas import (
     MaintenanceKnowledgeProfile,
+    MaintenanceResearchResult,
     VehicleIdentity
 )
 from app.ai.vehicle_identity_key import (
     create_vehicle_identity_key,
+)
+from app.ai.research.factory import (
+    get_research_provider,
 )
 from app.repositories.maintenance_knowledge_repository import (
     MaintenanceKnowledgeRepository,
@@ -17,15 +21,40 @@ class MaintenanceKnowledgeService:
     def __init__(self):
         self.repository = (MaintenanceKnowledgeRepository())
 
+        self.research_provider = (get_research_provider())
+
+    def _build_knowledge_profile(
+        self,
+        identity: VehicleIdentity,
+        research_result: MaintenanceResearchResult,
+    ) -> MaintenanceKnowledgeProfile:
+        raise NotImplementedError(
+            "Research validation and normalization are not implemented yet."
+        )
+
+    async def _research_vehicle(self, identity: VehicleIdentity) -> MaintenanceResearchResult:
+        return await self.research_provider.research(identity)
+
     async def get_maintenance_profile(self, identity: VehicleIdentity) -> MaintenanceKnowledgeProfile:
-        profile = await self._get_cached_profile(identity)
+        cached_profile = await self._get_cached_profile(
+            identity
+        )
 
-        if profile is not None:
-            return profile
+        if cached_profile is not None:
+            return cached_profile
 
-        profile = await self._research_vehicle(identity)
+        research_result = await self._research_vehicle(
+            identity
+        )
 
-        await self._cache_profile(profile)
+        profile = self._build_knowledge_profile(
+            identity=identity,
+            research_result=research_result,
+        )
+
+        await self._cache_profile(
+            profile
+        )
 
         return profile
 

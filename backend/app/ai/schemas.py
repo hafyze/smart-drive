@@ -123,3 +123,46 @@ class MaintenanceKnowledgeProfile(BaseModel):
     guidance: list[MaintenanceGuidanceItem]
 
     generated_at: datetime
+
+class ResearchedVehicleMatch(BaseModel):
+    manufacturer: str
+    model: str
+
+    variant: str | None = None
+
+    year_from: int | None = None
+    year_to: int | None = None
+
+    transmission: str | None = None
+
+
+class ResearchSource(BaseModel):
+    name: str
+    url: str
+    title: str | None = None
+
+    source_type: MaintenanceSourceType
+
+    vehicle_match: ResearchedVehicleMatch | None = None
+
+
+class ResearchedMaintenanceItem(BaseModel):
+    key: str
+    name: str
+
+    recommendation_type: MaintenanceRecommendationType
+
+    interval_km: int | None = None
+    interval_months: int | None = None
+    starting_mileage: int | None = None
+
+    description: str | None = None
+    reason: str | None = None
+
+    source_urls: list[str]
+
+
+class MaintenanceResearchResult(BaseModel):
+    guidance: list[ResearchedMaintenanceItem]
+
+    sources: list[ResearchSource]

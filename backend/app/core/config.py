@@ -16,6 +16,14 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
     ]
 
+    ai_research_provider: str = "gemini"
+
+    openai_api_key: str = ""
+    openai_research_model:str = ""
+
+    gemini_api_key: str = ""
+    gemini_research_model: str = ""
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
