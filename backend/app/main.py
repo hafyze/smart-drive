@@ -13,6 +13,7 @@ from app.routes.auth import router as auth_router
 from app.routes.maintenance import router as maintenance_router
 from app.routes.service_history import router as service_history_router
 from app.routes.receipt import router as receipt_router
+from app.routes.ai import router as ai_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,8 +40,9 @@ app.add_middleware(
 
 #Routes
 app.include_router(health_router)
-app.include_router(vehicle_router)
 app.include_router(auth_router)
+app.include_router(ai_router)
+app.include_router(vehicle_router)
 app.include_router(maintenance_router)
 app.include_router(service_history_router)
 app.include_router(receipt_router)
