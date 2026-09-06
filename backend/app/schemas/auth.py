@@ -7,6 +7,7 @@ class RegisterRequest(BaseModel):
 class LoginRequst(BaseModel):
     email: EmailStr
     password: str
+    remember_me: bool = False
 
 class UserResponse(BaseModel):
     id: str

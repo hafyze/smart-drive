@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, status
 
 from app.dependencies.services_dependencies import get_auth_service
-from app.dependencies.auth_dependencies import get_current_user
+from app.dependencies.auth_dependencies import (
+    get_current_token,
+    get_current_user,
+)
 from app.schemas.auth import (
     LoginRequst,
     RegisterRequest,
@@ -38,3 +41,12 @@ async def me(
     current_user=Depends(get_current_user)
 ):
     return UserResponse.model_validate(current_user)
+
+@router.post(
+    "/logout",
+)
+async def logout(
+    token: str = Depends(get_current_token),
+    service: AuthService = Depends(get_auth_service),
+):
+    return await service.logout(token)

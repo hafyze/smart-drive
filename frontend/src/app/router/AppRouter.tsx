@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import ProtectedRoute from "./ProtectedRoute";
+import PublicOnlyRoute from "./PublicOnlyRoute";
 
 import DashboardLayout from "@/layouts/DashboardLayout";
 import AuthLayout from "@/layouts/AuthLayout";
@@ -25,10 +26,17 @@ import { ROUTES } from "./routes";
 export default function AppRouter() {
     return (
         <Routes>
-            <Route element={<AuthLayout />}>
-                <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-                <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+            <Route element={<PublicOnlyRoute />}>
+                <Route element={<AuthLayout />}>
+                    <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+                    <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+                </Route>
             </Route>
+
+            <Route
+                path={ROUTES.HOME}
+                element={<Navigate to={ROUTES.DASHBOARD} replace />}
+            />
 
             <Route element={<ProtectedRoute />}>
                 <Route element={<DashboardLayout />}>

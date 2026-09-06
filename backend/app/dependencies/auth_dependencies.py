@@ -2,7 +2,6 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.security import HTTPBearer
 
-from app.core.jwt_core import decode_access_token
 from app.dependencies.services_dependencies import get_auth_service
 from app.services.auth_service import AuthService
 
@@ -13,20 +12,24 @@ async def get_current_user(
     auth_service: AuthService = Depends(get_auth_service)
 ):
     token = credentials.credentials
-    payload = decode_access_token(token)
 
-    if not payload:
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
         )
 
-    user_id = payload.get("sub")
+    return await auth_service.get_current_user_by_token(token)
 
-    if user_id is None:
+async def get_current_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
+    token = credentials.credentials
+
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
         )
 
-    return await auth_service.get_current_user(user_id)
+    return token

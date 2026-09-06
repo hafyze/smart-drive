@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { toast } from "@/shared/components/ui/toast";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 
 import { ROUTES } from "@/app/router/routes";
 
@@ -30,27 +31,36 @@ export default function LoginPage() {
     const {
         register,
         handleSubmit,
+        setValue,
+        watch,
         formState: { errors },
     } = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
             email: "",
             password: "",
+            remember_me: false,
         },
     });
+
+    const rememberMe = watch("remember_me");
 
     const onSubmit = async (data: LoginFormValues) => {
         try {
             setIsLoading(true);
 
+            const shouldRemember = rememberMe === true;
+
             const response = await authApi.login({
                 email: data.email,
                 password: data.password,
+                remember_me: shouldRemember,
             });
 
             setAuth(
                 response.user,
-                response.access_token
+                response.access_token,
+                shouldRemember,
             );
 
             toast.add({
@@ -143,6 +153,31 @@ export default function LoginPage() {
                                     {errors.password.message}
                                 </p>
                             )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Checkbox
+                                id="remember_me"
+                                checked={rememberMe}
+                                disabled={isLoading}
+                                onCheckedChange={(checked) =>
+                                    setValue(
+                                        "remember_me",
+                                        checked === true,
+                                        {
+                                            shouldDirty: true,
+                                            shouldValidate: true,
+                                        },
+                                    )
+                                }
+                            />
+
+                            <Label
+                                htmlFor="remember_me"
+                                className="text-sm font-normal text-muted-foreground"
+                            >
+                                Remember me
+                            </Label>
                         </div>
 
                         <Button

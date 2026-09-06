@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { isAxiosError } from "axios";
 
 import { useAuthStore } from "../store/authStore";
 import { authApi } from "../api/authApi";
@@ -7,6 +8,7 @@ import { useAuth } from "../hooks/useAuth";
 export function AuthInitializer() {
     const {
         accessToken,
+        rememberMe,
         isInitialized,
         setAuth,
         setInitialized,
@@ -27,9 +29,15 @@ export function AuthInitializer() {
             try {
                 const user = await authApi.me();
 
-                setAuth(user, accessToken);
-            } catch {
-                logout();
+                setAuth(user, accessToken, rememberMe);
+            } catch (error) {
+                if (
+                    !isAxiosError(error) ||
+                    error.response?.status === 401 ||
+                    error.response?.status === 403
+                ) {
+                    logout();
+                }
             } finally {
                 setInitialized(true);
             }
@@ -48,6 +56,7 @@ export function AuthInitializer() {
         return unsubscribe;
     }, [
         accessToken,
+        rememberMe,
         isInitialized,
         setAuth,
         setInitialized,

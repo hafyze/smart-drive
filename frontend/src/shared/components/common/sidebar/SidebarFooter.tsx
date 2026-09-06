@@ -6,11 +6,18 @@ import { Button } from "../../ui/button";
 
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { ROUTES } from "@/app/router/routes";
+import { authApi } from "@/features/auth/api/authApi";
 
 export function SidebarFooter() {
     const navigate = useNavigate();
     const { logout } = useAuth();
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            await authApi.logout();
+        } catch {
+            // Local logout should still happen if the session is already gone.
+        }
+
         logout();
 
         navigate(ROUTES.LOGIN, {

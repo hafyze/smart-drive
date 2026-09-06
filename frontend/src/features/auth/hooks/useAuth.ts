@@ -6,6 +6,7 @@ export function useAuth() {
     const isAuthenticated = useAuthStore(
         (state) => state.isAuthenticated
     );
+    const rememberMe = useAuthStore((state) => state.rememberMe);
     const isInitialized = useAuthStore(
         (state) => state.isInitialized
     )
@@ -17,6 +18,7 @@ export function useAuth() {
     return {
         user,
         accessToken,
+        rememberMe,
         isAuthenticated,
         isInitialized,
         setAuth,
