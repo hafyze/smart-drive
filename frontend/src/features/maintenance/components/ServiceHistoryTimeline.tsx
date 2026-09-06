@@ -12,9 +12,11 @@ import {
 } from "lucide-react";
 
 import type { ServiceHistoryVisit } from "../types/serviceHistory";
+import { ServiceVisitReceipts } from "@/features/receipts/components/ServiceVisitReceipts";
 
 interface ServiceHistoryTimelineProps {
     records: ServiceHistoryVisit[];
+    vehicleId: string
 }
 
 function getMaintenanceIcon(type: string) {
@@ -96,6 +98,7 @@ function formatCost(cost: number | null) {
 
 export function ServiceHistoryTimeline({
     records,
+    vehicleId
 }: ServiceHistoryTimelineProps) {
     return (
         <div className="relative">
@@ -248,6 +251,11 @@ export function ServiceHistoryTimeline({
                                         </p>
                                     </div>
                                 )}
+
+                                <ServiceVisitReceipts
+                                    vehicleId={vehicleId}
+                                    serviceVisitId={record.id}
+                                />
                             </div>
                         </div>
                     </div>

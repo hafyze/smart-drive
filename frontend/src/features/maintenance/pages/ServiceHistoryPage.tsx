@@ -137,7 +137,7 @@ export default function ServiceHistoryPage() {
                     </CardHeader>
 
                     <CardContent>
-                        <ServiceHistoryTimeline records={serviceHistory} />
+                        <ServiceHistoryTimeline records={serviceHistory} vehicleId={vehicleId ?? ""}/>
                     </CardContent>
                 </Card>
             )}
