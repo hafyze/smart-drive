@@ -12,6 +12,9 @@ from app.ai.research.factory import (
 from app.ai.search.factory import (
     get_maintenance_search_provider,
 )
+from app.ai.research.source_validator import (
+    SourceValidator,
+)
 from app.routes.auth import (
     get_current_user,
 )
@@ -73,8 +76,15 @@ async def research_vehicle(
         search_results=search_results,
     )
 
+    validator = SourceValidator()
+    validated_research = validator.validate(
+        identity=identity,
+        research_result=research,
+    )
+
     return {
         "identity": identity,
         "search_results": search_results,
-        "research": research,
+        "raw_research": research,
+        "validated_research": validated_research,
     }

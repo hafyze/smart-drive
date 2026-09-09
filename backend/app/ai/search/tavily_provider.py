@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 from typing import Any
 
 import httpx
@@ -32,10 +31,6 @@ class TavilySearchProvider(MaintenanceSearchProvider):
         "scribd.com",
         "www.scribd.com",
     }
-    TRUSTED_DOMAINS = {
-        "perodua.com.my",
-        "www.perodua.com.my",
-    }
     API_URL = "https://api.tavily.com/search"
 
     def __init__(self) -> None:
@@ -44,13 +39,12 @@ class TavilySearchProvider(MaintenanceSearchProvider):
         if not self.api_key:
             raise RuntimeError("TAVILY_API_KEY is not configured.")
 
-        self.max_results_per_query = int(
-            os.getenv("TAVILY_MAX_RESULTS", 5)
+        self.max_results_per_query = (
+            settings.tavily_max_results
         )
 
-        self.search_depth = os.getenv(
-            "TAVILY_SEARCH_DEPTH",
-            "advanced"
+        self.search_depth = (
+            settings.tavily_search_depth
         )
 
     async def search(self, identity: VehicleIdentity) -> list[SearchResult]:
