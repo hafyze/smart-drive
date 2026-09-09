@@ -6,12 +6,16 @@ from app.ai.context_builder import (
 from app.ai.schemas import (
     VehicleMaintenanceContext,
 )
-from app.routes.auth import (
-    get_current_user,
-)
 from app.ai.research.factory import (
     get_research_provider,
 )
+from app.ai.search.factory import (
+    get_maintenance_search_provider,
+)
+from app.routes.auth import (
+    get_current_user,
+)
+
 
 router = APIRouter(
     prefix="/ai",
@@ -36,9 +40,7 @@ async def get_vehicle_ai_context(
         user_id=current_user["id"],
     )
 
-@router.get(
-    "/research/{vehicle_id}",
-)
+@router.get("/research/{vehicle_id}")
 async def research_vehicle(
     vehicle_id: str,
     current_user: dict = Depends(
@@ -52,8 +54,27 @@ async def research_vehicle(
         user_id=current_user["id"],
     )
 
-    provider = get_research_provider()
+    identity = context.vehicle.identity
 
-    return await provider.research(
-        context.vehicle.identity
+    search_provider = (
+        get_maintenance_search_provider()
     )
+
+    research_provider = (
+        get_research_provider()
+    )
+
+    search_results = await search_provider.search(
+        identity
+    )
+
+    research = await research_provider.research(
+        identity=identity,
+        search_results=search_results,
+    )
+
+    return {
+        "identity": identity,
+        "search_results": search_results,
+        "research": research,
+    }

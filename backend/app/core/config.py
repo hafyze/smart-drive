@@ -1,11 +1,16 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    SettingsConfigDict,
+)
 
 
 class Settings(BaseSettings):
     app_name: str = "AutoCare API"
     app_version: str = "1.0.0"
 
-    mongodb_uri: str = "mongodb://127.0.0.1:27017"
+    mongodb_uri: str = (
+        "mongodb://127.0.0.1:27017"
+    )
     mongodb_database: str = "autocare"
 
     jwt_secret: str = "change-later"
@@ -17,17 +22,23 @@ class Settings(BaseSettings):
     ]
 
     ai_research_provider: str = "gemini"
+    ai_search_provider: str = "tavily"
 
     openai_api_key: str = ""
-    openai_research_model:str = ""
+    openai_research_model: str = ""
 
     gemini_api_key: str = ""
     gemini_research_model: str = ""
-    
+
+    tavily_api_key: str = ""
+    tavily_search_depth: str = "advanced"
+    tavily_max_results: int = 5
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
 
 settings = Settings()

@@ -45,13 +45,13 @@ class TavilySearchProvider(MaintenanceSearchProvider):
         results: list[SearchResult] = []
 
         for query, result in zip(queries, query_results):
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
                 logger.warning(
                     "Tavily search failed for query '%s': %s ", query, result,
                 )
                 continue
 
-            results.extend(results)
+            results.extend(result)
         return self._deduplicate_results(results)
 
     def _build_queries(self, identity: VehicleIdentity) -> list[str]:
@@ -122,8 +122,8 @@ class TavilySearchProvider(MaintenanceSearchProvider):
 
         search_results: list[SearchResult] = []
 
-        for item in data.get("resutls", []):
-            url = item.get("uri")
+        for item in data.get("results", []):
+            url = item.get("url")
 
             if not url:
                 continue

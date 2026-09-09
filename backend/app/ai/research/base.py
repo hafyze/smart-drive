@@ -1,11 +1,12 @@
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 
 from app.ai.schemas import (
     MaintenanceResearchResult,
     VehicleIdentity
 )
+from app.ai.search.schemas import SearchResult
 
 class MaintenanceResearchProvider(ABC):
-    @abstractclassmethod
-    async def research(self, identity: VehicleIdentity) -> MaintenanceResearchResult:
-        pass
+    @abstractmethod
+    async def research(self, identity: VehicleIdentity, search_results: list[SearchResult]) -> MaintenanceResearchResult:
+        raise NotImplementedError
