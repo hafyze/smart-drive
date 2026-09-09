@@ -9,13 +9,37 @@ from app.ai.schemas import VehicleIdentity
 from app.ai.search.base import MaintenanceSearchProvider
 from app.ai.search.schemas import SearchResult
 
+from urllib.parse import urlparse
+
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 class TavilySearchProvider(MaintenanceSearchProvider):
+
+    BLOCKED_DOMAINS = {
+        "reddit.com",
+        "www.reddit.com",
+        "facebook.com",
+        "www.facebook.com",
+        "tiktok.com",
+        "www.tiktok.com",
+        "forum.lowyat.net",
+        "mudah.my",
+        "www.mudah.my",
+        "softonic.com",
+        "www.softonic.com",
+        "scribd.com",
+        "www.scribd.com",
+    }
+    TRUSTED_DOMAINS = {
+        "perodua.com.my",
+        "www.perodua.com.my",
+    }
     API_URL = "https://api.tavily.com/search"
 
     def __init__(self) -> None:
-        self.api_key = os.getenv("TAVILY_API_KEY")
+        self.api_key = settings.tavily_api_key
 
         if not self.api_key:
             raise RuntimeError("TAVILY_API_KEY is not configured.")
@@ -127,6 +151,8 @@ class TavilySearchProvider(MaintenanceSearchProvider):
 
             if not url:
                 continue
+            if self._is_blocked_url(url):
+                continue
 
             search_results.append(
                 SearchResult(
@@ -158,3 +184,13 @@ class TavilySearchProvider(MaintenanceSearchProvider):
                 deduplicated[url] = result
 
         return list(deduplicated.values())
+
+    @classmethod
+    def _is_blocked_url(cls,url: str) -> bool:
+        hostname = (
+            urlparse(url)
+            .hostname
+            or ""
+        ).lower()
+
+        return hostname in cls.BLOCKED_DOMAINS

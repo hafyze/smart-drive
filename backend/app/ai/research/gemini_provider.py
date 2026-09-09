@@ -1,5 +1,7 @@
+import asyncio
+
 from google import genai
-from google.genai import types
+from google.genai import types, errors
 
 from app.ai.research.base import (
     MaintenanceResearchProvider,
@@ -42,18 +44,8 @@ class GeminiResearchProvider(
             search_results=search_results,
         )
 
-        response = (
-            await self.client.aio.models.generate_content(
-                model=settings.gemini_research_model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0.1,
-                    response_mime_type="application/json",
-                    response_schema=(
-                        MaintenanceResearchResult
-                    ),
-                ),
-            )
+        response = await self._generate_with_retry(
+            prompt
         )
 
         if not response.text:
@@ -72,6 +64,35 @@ class GeminiResearchProvider(
             result=result,
             search_results=search_results,
         )
+
+    async def _generate_with_retry(self, prompt: str):
+        max_attempts = 3
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return (
+                    await self.client.aio.models.generate_content(
+                        model=settings.gemini_research_model,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            temperature=0.1,
+                            response_mime_type=(
+                                "application/json"
+                            ),
+                            response_schema=(
+                                MaintenanceResearchResult
+                            ),
+                        ),
+                    )
+                )
+            except errors.ServerError as exc:
+                if (exc.code != 503 or attempt == max_attempts):
+                    raise
+                delay_seconds = 2**attempt
+
+                await asyncio.sleep(delay_seconds)
+
+        raise RuntimeError("Gemini retry loop exited unexpectedly")
 
     def _build_source_context(
         self,
