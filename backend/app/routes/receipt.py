@@ -7,6 +7,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import FileResponse
 
 from app.dependencies.services_dependencies import (
     get_receipt_service,
@@ -93,6 +94,28 @@ async def get_all_receipts(
 # ============================================================
 # GET RECEIPT
 # ============================================================
+
+@router.get(
+    "/{receipt_id}/file",
+    response_class=FileResponse,
+)
+async def get_receipt_file(
+    receipt_id: str,
+    current_user: dict = Depends(get_current_user),
+    service: ReceiptService = Depends(get_receipt_service),
+):
+    file_path, content_type, filename = await service.get_receipt_file(
+        receipt_id=receipt_id,
+        user_id=current_user["id"],
+    )
+    return FileResponse(
+        path=file_path,
+        media_type=content_type,
+        filename=filename,
+        content_disposition_type="inline",
+        headers={"Cache-Control": "private, no-store"},
+    )
+
 
 @router.get(
     "/{receipt_id}",

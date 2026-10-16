@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException, UploadFile, status
@@ -238,6 +239,39 @@ class ReceiptService:
 
         return ReceiptResponse.model_validate(
             serialize_document(receipt)
+        )
+
+    async def get_receipt_file(
+        self,
+        receipt_id: str,
+        user_id: str,
+    ) -> tuple[Path, str, str]:
+        receipt = await self._get_owned_receipt(
+            receipt_id,
+            user_id,
+        )
+
+        stored_filename = receipt["stored_filename"]
+        if Path(stored_filename).name != stored_filename:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Receipt file not found.",
+            )
+
+        file_path = (
+            self.storage_service.upload_directory
+            / stored_filename
+        )
+        if not file_path.is_file():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Receipt file not found.",
+            )
+
+        return (
+            file_path,
+            receipt["content_type"],
+            receipt["original_filename"],
         )
 
     # ============================================================

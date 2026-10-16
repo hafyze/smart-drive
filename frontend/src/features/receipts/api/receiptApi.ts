@@ -8,6 +8,17 @@ import type {
 } from "../types/receipt";
 
 export const receiptApi = {
+    getFile: async (
+        receiptId: string,
+        signal?: AbortSignal,
+    ): Promise<Blob> => {
+        const response = await api.get<Blob>(
+            `/receipts/${receiptId}/file`,
+            { responseType: "blob", signal },
+        );
+        return response.data;
+    },
+
     getAll: async (
         vehicleId?: string,
         serviceVisitId?: string,

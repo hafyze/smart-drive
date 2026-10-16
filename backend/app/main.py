@@ -1,8 +1,6 @@
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
@@ -46,14 +44,3 @@ app.include_router(vehicle_router)
 app.include_router(maintenance_router)
 app.include_router(service_history_router)
 app.include_router(receipt_router)
-
-Path("uploads/receipts").mkdir(
-    parents=True,
-    exist_ok=True,
-)
-# 
-app.mount(
-    "/uploads",
-    StaticFiles(directory="uploads"),
-    name="uploads",
-)
