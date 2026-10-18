@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2, Plus, ScanLine, Trash2, Wrench } from "lucide-react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -129,6 +129,7 @@ export function AddMaintenanceDialog({
     const [scanning, setScanning] = useState(false);
     const [savedVisitId, setSavedVisitId] = useState<string | null>(null);
     const [scanError, setScanError] = useState<string | null>(null);
+    const receiptInputRef = useRef<HTMLInputElement>(null);
 
     const createServiceVisit = useCreateServiceVisit();
 
@@ -157,6 +158,20 @@ export function AddMaintenanceDialog({
         control,
         name: "items",
     });
+
+    const resetVisitDraft = () => {
+        reset({
+            service_date: "",
+            mileage_at_service: 0,
+            workshop: "",
+            notes: "",
+            items: [defaultItem],
+        });
+        setReceiptFile(null);
+        setSavedVisitId(null);
+        setScanError(null);
+        if (receiptInputRef.current) receiptInputRef.current.value = "";
+    };
 
 
     const onSubmit = async (values: ServiceVisitFormValues) => {
@@ -218,14 +233,7 @@ export function AddMaintenanceDialog({
                 }
             }
 
-            reset({
-                service_date: "",
-                mileage_at_service: 0,
-                workshop: "",
-                notes: "",
-                items: [defaultItem],
-            });
-
+            resetVisitDraft();
             setOpen(false);
         } catch {
             // The mutation hook handles the error state/toast.
@@ -268,16 +276,7 @@ export function AddMaintenanceDialog({
         setOpen(value);
 
         if (!value) {
-            reset({
-                service_date: "",
-                mileage_at_service: 0,
-                workshop: "",
-                notes: "",
-                items: [defaultItem],
-            });
-            setReceiptFile(null);
-            setSavedVisitId(null);
-            setScanError(null);
+            resetVisitDraft();
         }
     };
 
@@ -323,6 +322,7 @@ export function AddMaintenanceDialog({
                             </div>
                             <div className="flex flex-wrap items-center gap-3">
                                 <Input
+                                    ref={receiptInputRef}
                                     type="file"
                                     accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
                                     disabled={Boolean(savedVisitId)}

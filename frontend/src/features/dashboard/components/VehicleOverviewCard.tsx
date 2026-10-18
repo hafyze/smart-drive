@@ -1,5 +1,5 @@
 import { Gauge } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -23,7 +23,12 @@ export function VehicleOverviewCard({
     const navigate = useNavigate();
 
     return (
-        <Card>
+        <Card className="relative transition-colors hover:ring-primary/40">
+            <Link
+                to={`/garage/${vehicle.id}`}
+                className="absolute inset-0 z-10 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`View ${vehicle.nickname}`}
+            />
             {/* Vehicle Image */}
             <div>
                 <VehiclePhoto
@@ -68,7 +73,11 @@ export function VehicleOverviewCard({
                 <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate(`/garage/${vehicle.id}`)}
+                    className="relative z-20"
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        navigate(`/garage/${vehicle.id}`);
+                    }}
                 >
                     View Vehicle
                 </Button>

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Gauge, MoreHorizontal } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import {
     Card,
@@ -35,7 +35,12 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
 
     return (
         <div>
-            <Card className="overflow-hidden">
+            <Card className="relative overflow-hidden transition-colors hover:ring-primary/40">
+            <Link
+                to={`/garage/${vehicle.id}`}
+                className="absolute inset-0 z-10 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`View ${vehicle.nickname}`}
+            />
             <div className="relative aspect-video bg-muted ">
                 <VehiclePhoto
                     photoUrl={vehicle.photo_url}
@@ -78,7 +83,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
             </CardContent>
 
             <CardFooter className="flex items-center justify-between">
-                <Button variant="outline" size="sm" onClick={() => navigate(`/garage/${vehicle.id}`)}>
+                <Button variant="outline" size="sm" className="relative z-20" onClick={() => navigate(`/garage/${vehicle.id}`)}>
                     View Vehicle
                 </Button>
 
@@ -88,6 +93,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                             <Button
                                 variant="ghost"
                                 size="icon"
+                                className="relative z-20"
                                 aria-label="Vehicle actions"
                             >
                                 <MoreHorizontal />
