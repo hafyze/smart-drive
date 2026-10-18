@@ -32,6 +32,18 @@ export const vehicleApi = {
         return response.data
     },
 
+    uploadPhoto: async (vehicleId: string, file: File): Promise<VehicleResponse> => {
+        const data = new FormData();
+        data.append("file", file);
+        const response = await api.post<VehicleResponse>(`/vehicles/${vehicleId}/photo`, data);
+        return response.data;
+    },
+
+    deletePhoto: async (vehicleId: string): Promise<VehicleResponse> => {
+        const response = await api.delete<VehicleResponse>(`/vehicles/${vehicleId}/photo`);
+        return response.data;
+    },
+
     update: async (vehicleId: string, vehicle: VehicleUpdate): Promise<VehicleResponse> => {
         const response = await api.put<VehicleResponse>(
             `/vehicles/${vehicleId}`,

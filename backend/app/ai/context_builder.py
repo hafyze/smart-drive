@@ -161,4 +161,10 @@ class VehicleContextBuilder:
                 detail="Access denied.",
             )
 
+        if vehicle.get("deleted_at") is not None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Vehicle not found.",
+            )
+
         return vehicle

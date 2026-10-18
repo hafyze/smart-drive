@@ -66,6 +66,29 @@ export const useUpdateVehicle = () => {
     });
 };
 
+export const useUploadVehiclePhoto = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ vehicleId, file }: { vehicleId: string; file: File }) =>
+            vehicleApi.uploadPhoto(vehicleId, file),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: VEHICLES_QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: [...VEHICLES_QUERY_KEY, variables.vehicleId] });
+        },
+    });
+};
+
+export const useDeleteVehiclePhoto = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (vehicleId: string) => vehicleApi.deletePhoto(vehicleId),
+        onSuccess: (_, vehicleId) => {
+            queryClient.invalidateQueries({ queryKey: VEHICLES_QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: [...VEHICLES_QUERY_KEY, vehicleId] });
+        },
+    });
+};
+
 export const useDeleteVehicle = () => {
     const queryClient = useQueryClient();
 

@@ -27,7 +27,8 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { ScrollArea, ScrollBar } from "@/shared/components/ui/scroll-area";
 import { toast } from "@/shared/components/ui/toast";
 
-import { useUpdateVehicle } from "../hooks/useVehicles";
+import { useDeleteVehiclePhoto, useUpdateVehicle, useUploadVehiclePhoto } from "../hooks/useVehicles";
+import { VehiclePhotoField } from "./VehiclePhotoField";
 import type { VehicleResponse } from "../types/vehicle";
 import {
     vehicleUpdateSchema,
@@ -71,6 +72,11 @@ export function EditVehicleDialog({
     const [open, setOpen] = useState(false)
 
     const updateVehicle = useUpdateVehicle();
+    const uploadPhoto = useUploadVehiclePhoto();
+    const deletePhoto = useDeleteVehiclePhoto();
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [removeCurrentPhoto, setRemoveCurrentPhoto] = useState(false);
+    const photoMutationPending = uploadPhoto.isPending || deletePhoto.isPending;
 
     const form = useForm<
         VehicleUpdateFormInput,
@@ -99,6 +105,8 @@ export function EditVehicleDialog({
 
     useEffect(() => {
         if (open) {
+            setPhotoFile(null);
+            setRemoveCurrentPhoto(false);
             form.reset({
                 nickname: vehicle.nickname,
                 manufacturer: vehicle.manufacturer,
@@ -137,6 +145,12 @@ export function EditVehicleDialog({
                 },
             });
 
+            if (photoFile) {
+                await uploadPhoto.mutateAsync({ vehicleId: vehicle.id, file: photoFile });
+            } else if (removeCurrentPhoto && vehicle.photo_url) {
+                await deletePhoto.mutateAsync(vehicle.id);
+            }
+
             toast.add({
                 title:"Vehicle updated",
                 description: `${values.nickname ?? vehicle.nickname} has been updated.`,
@@ -163,7 +177,7 @@ export function EditVehicleDialog({
         }
     };
     const handleOpenChange = (value: boolean) => {
-        if (!updateVehicle.isPending) {
+        if (!updateVehicle.isPending && !uploadPhoto.isPending && !deletePhoto.isPending) {
             setOpen(value)
         }
     };
@@ -486,16 +500,14 @@ export function EditVehicleDialog({
                                 </h3>
                             </div>
 
-                            <FormField
-                                label="Photo URL"
-                                error={
-                                    form.formState.errors.photo_url?.message
-                                }
-                            >
-                                <Input
-                                    {...form.register("photo_url")}
-                                />
-                            </FormField>
+                            <VehiclePhotoField
+                                currentPhotoUrl={vehicle.photo_url}
+                                file={photoFile}
+                                onFileChange={setPhotoFile}
+                                removed={removeCurrentPhoto}
+                                onRemoveCurrent={() => setRemoveCurrentPhoto(true)}
+                                onRestoreCurrent={() => setRemoveCurrentPhoto(false)}
+                            />
 
                             <FormField
                                 label="Notes"
@@ -514,7 +526,7 @@ export function EditVehicleDialog({
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={updateVehicle.isPending}
+                                disabled={updateVehicle.isPending || photoMutationPending}
                                 onClick={() =>
                                     handleOpenChange(false)
                                 }
@@ -524,13 +536,13 @@ export function EditVehicleDialog({
 
                             <Button
                                 type="submit"
-                                disabled={updateVehicle.isPending}
+                                disabled={updateVehicle.isPending || photoMutationPending}
                             >
-                                {updateVehicle.isPending && (
+                                {(updateVehicle.isPending || photoMutationPending) && (
                                     <Loader2 className="animate-spin" />
                                 )}
 
-                                {updateVehicle.isPending
+                                {updateVehicle.isPending || photoMutationPending
                                     ? "Saving..."
                                     : "Save Changes"}
                             </Button>

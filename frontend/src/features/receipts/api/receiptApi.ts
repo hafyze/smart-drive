@@ -4,10 +4,19 @@ import type {
     CreateReceiptPayload,
     DeleteReceiptResponse,
     Receipt,
+    ReceiptScanResult,
     UpdateReceiptPayload,
 } from "../types/receipt";
 
 export const receiptApi = {
+    scan: async (file: File): Promise<ReceiptScanResult> => {
+        const data = new FormData();
+        data.append("file", file);
+        const response = await api.post<ReceiptScanResult>("/receipts/scan", data, {
+            timeout: 120_000,
+        });
+        return response.data;
+    },
     getFile: async (
         receiptId: string,
         signal?: AbortSignal,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Wrench } from "lucide-react";
+import { Loader2, Plus, ScanLine, Trash2, Wrench } from "lucide-react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -34,6 +34,9 @@ import { useCreateServiceVisit } from "../hooks/useMaintenance";
 
 import type { MaintenanceType } from "../types/maintenance";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
+import { receiptApi } from "@/features/receipts/api/receiptApi";
+import { receiptUploadSchema } from "@/features/receipts/validation/receiptSchema";
+import { toast } from "@/shared/components/ui/toast";
 
 
 interface AddMaintenanceDialogProps {
@@ -122,6 +125,10 @@ export function AddMaintenanceDialog({
     vehicleId,
 }: AddMaintenanceDialogProps) {
     const [open, setOpen] = useState(false);
+    const [receiptFile, setReceiptFile] = useState<File | null>(null);
+    const [scanning, setScanning] = useState(false);
+    const [savedVisitId, setSavedVisitId] = useState<string | null>(null);
+    const [scanError, setScanError] = useState<string | null>(null);
 
     const createServiceVisit = useCreateServiceVisit();
 
@@ -146,15 +153,24 @@ export function AddMaintenanceDialog({
         formState: { errors },
     } = form;
 
-    const { fields, append, remove } = useFieldArray({
+    const { fields, append, remove, replace } = useFieldArray({
         control,
         name: "items",
     });
 
 
     const onSubmit = async (values: ServiceVisitFormValues) => {
+        if (receiptFile) {
+            const validation = receiptUploadSchema.safeParse({ file: receiptFile });
+            if (!validation.success) {
+                setScanError(validation.error.issues[0]?.message ?? "Choose a supported receipt file.");
+                return;
+            }
+        }
         try {
-            await createServiceVisit.mutateAsync({
+            let serviceVisitId = savedVisitId;
+            if (!serviceVisitId) {
+                const created = await createServiceVisit.mutateAsync({
                 vehicle_id: vehicleId,
 
                 service_date: values.service_date,
@@ -180,7 +196,27 @@ export function AddMaintenanceDialog({
                     notes:
                         item.notes || null,
                 })),
-            });
+                });
+                serviceVisitId = created.id;
+                setSavedVisitId(serviceVisitId);
+            }
+
+            if (receiptFile && serviceVisitId) {
+                try {
+                    await receiptApi.create({
+                        vehicleId,
+                        serviceVisitId,
+                        file: receiptFile,
+                    });
+                } catch {
+                    toast.add({
+                        title: "Service saved; receipt needs retry",
+                        description: "The service visit was saved. Submit again to retry attaching its receipt.",
+                        type: "error",
+                    });
+                    return;
+                }
+            }
 
             reset({
                 service_date: "",
@@ -196,6 +232,37 @@ export function AddMaintenanceDialog({
         }
     };
 
+    const handleScanReceipt = async () => {
+        if (!receiptFile) return;
+        const validation = receiptUploadSchema.safeParse({ file: receiptFile });
+        if (!validation.success) {
+            setScanError(validation.error.issues[0]?.message ?? "Choose a supported receipt file.");
+            return;
+        }
+        setScanning(true);
+        setScanError(null);
+        try {
+            const draft = await receiptApi.scan(receiptFile);
+            setValue("service_date", draft.service_date ?? "", { shouldValidate: true });
+            setValue("mileage_at_service", draft.mileage_at_service ?? Number.NaN, { shouldValidate: true });
+            setValue("workshop", draft.workshop ?? "", { shouldValidate: true });
+            replace(draft.items.length
+                ? draft.items.map((item) => ({
+                    type: item.type,
+                    description: item.description,
+                    next_due_date: "",
+                    next_due_mileage: undefined,
+                    cost: item.cost ?? undefined,
+                    notes: "",
+                }))
+                : [{ ...defaultItem, type: "OTHER" as MaintenanceType }]);
+        } catch (error: any) {
+            setScanError(error.response?.data?.detail ?? "Could not scan this receipt. Try a clearer image or PDF.");
+        } finally {
+            setScanning(false);
+        }
+    };
+
 
     const handleOpenChange = (value: boolean) => {
         setOpen(value);
@@ -208,6 +275,9 @@ export function AddMaintenanceDialog({
                 notes: "",
                 items: [defaultItem],
             });
+            setReceiptFile(null);
+            setSavedVisitId(null);
+            setScanError(null);
         }
     };
 
@@ -237,9 +307,42 @@ export function AddMaintenanceDialog({
 
                 <ScrollArea className="max-h-[70vh] pr-4">
                     <form
-                        onSubmit={handleSubmit(onSubmit)}
+                        onSubmit={savedVisitId
+                            ? (event) => {
+                                event.preventDefault();
+                                void onSubmit(form.getValues());
+                            }
+                            : handleSubmit(onSubmit)}
                         className="space-y-6"
                     >
+
+                        <div className="space-y-3 rounded-xl border border-dashed p-4">
+                            <div>
+                                <h3 className="font-semibold">Scan a Receipt</h3>
+                                <p className="text-sm text-muted-foreground">Choose a receipt image or PDF to prefill this editable service visit.</p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <Input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
+                                    disabled={Boolean(savedVisitId)}
+                                    onChange={(event) => {
+                                        setReceiptFile(event.target.files?.[0] ?? null);
+                                        setScanError(null);
+                                    }}
+                                    className="max-w-md"
+                                />
+                                <Button type="button" variant="outline" onClick={handleScanReceipt} disabled={!receiptFile || scanning || Boolean(savedVisitId)}>
+                                    {scanning ? <Loader2 className="size-4 animate-spin" /> : <ScanLine className="size-4" />}
+                                    {scanning ? "Scanning..." : "Scan receipt"}
+                                </Button>
+                            </div>
+                            {receiptFile && <p className="text-xs text-muted-foreground">Selected: {receiptFile.name}</p>}
+                            {scanError && <p className="text-sm text-destructive">{scanError}</p>}
+                            {savedVisitId && <p className="text-sm text-amber-700">The service visit is saved. Submit again to retry attaching the selected receipt.</p>}
+                        </div>
+
+                        <fieldset disabled={Boolean(savedVisitId)} className="space-y-6">
 
                         {/* =====================================================
                             Service Visit
@@ -711,6 +814,8 @@ export function AddMaintenanceDialog({
                         </div>
 
 
+                        </fieldset>
+
                         {/* =====================================================
                             Footer
                         ====================================================== */}
@@ -727,11 +832,11 @@ export function AddMaintenanceDialog({
 
                             <Button
                                 type="submit"
-                                disabled={createServiceVisit.isPending}
+                                disabled={createServiceVisit.isPending || scanning}
                             >
                                 {createServiceVisit.isPending
                                     ? "Saving..."
-                                    : "Save Service"}
+                                    : savedVisitId ? "Retry receipt attachment" : "Save Service"}
                             </Button>
 
                         </DialogFooter>

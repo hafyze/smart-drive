@@ -32,3 +32,17 @@ export interface UpdateReceiptPayload {
 export interface DeleteReceiptResponse {
     success: boolean;
 }
+import type { MaintenanceType } from "@/features/maintenance/types/maintenance";
+
+export interface ReceiptScanItem {
+    type: MaintenanceType;
+    description: string;
+    cost: number | null;
+}
+export interface ReceiptScanResult {
+    service_date: string | null;
+    mileage_at_service: number | null;
+    workshop: string | null;
+    items: ReceiptScanItem[];
+    review_message: string;
+}

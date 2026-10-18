@@ -7,7 +7,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 
 from app.dependencies.services_dependencies import (
     get_receipt_service,
@@ -20,12 +20,23 @@ from app.schemas.receipt import (
 from app.services.receipt_service import (
     ReceiptService,
 )
+from app.services.receipt_scan_service import ReceiptScanService
+from app.schemas.receipt_scan import ReceiptScanResponse
 
 
 router = APIRouter(
     prefix="/receipts",
     tags=["Receipts"],
 )
+
+
+@router.post("/scan", response_model=ReceiptScanResponse)
+async def scan_receipt(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    del current_user  # Authentication is required before local OCR processing.
+    return await ReceiptScanService().scan(file)
 
 
 # ============================================================
@@ -97,23 +108,24 @@ async def get_all_receipts(
 
 @router.get(
     "/{receipt_id}/file",
-    response_class=FileResponse,
+    response_class=Response,
 )
 async def get_receipt_file(
     receipt_id: str,
     current_user: dict = Depends(get_current_user),
     service: ReceiptService = Depends(get_receipt_service),
 ):
-    file_path, content_type, filename = await service.get_receipt_file(
+    content, content_type, _filename = await service.get_receipt_file(
         receipt_id=receipt_id,
         user_id=current_user["id"],
     )
-    return FileResponse(
-        path=file_path,
+    return Response(
+        content=content,
         media_type=content_type,
-        filename=filename,
-        content_disposition_type="inline",
-        headers={"Cache-Control": "private, no-store"},
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 

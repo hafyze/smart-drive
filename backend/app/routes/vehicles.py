@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi.responses import Response
 
 from app.routes.auth import get_current_user
 from app.schemas.vehicle import (
@@ -91,4 +92,40 @@ async def delete_vehicle(
     return await service.delete_vehicle(
         vehicle_id=vehicle_id,
         user_id=current_user["id"]
+    )
+
+
+@router.post("/{vehicle_id}/photo", response_model=VehicleResponse)
+async def upload_vehicle_photo(
+    vehicle_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    service: VehicleService = Depends(get_vehicle_service),
+):
+    return await service.upload_photo(vehicle_id, current_user["id"], file)
+
+
+@router.delete("/{vehicle_id}/photo", response_model=VehicleResponse)
+async def delete_vehicle_photo(
+    vehicle_id: str,
+    current_user: dict = Depends(get_current_user),
+    service: VehicleService = Depends(get_vehicle_service),
+):
+    return await service.delete_photo(vehicle_id, current_user["id"])
+
+
+@router.get("/{vehicle_id}/photo", response_class=Response)
+async def get_vehicle_photo(
+    vehicle_id: str,
+    current_user: dict = Depends(get_current_user),
+    service: VehicleService = Depends(get_vehicle_service),
+):
+    content, content_type = await service.get_photo(vehicle_id, current_user["id"])
+    return Response(
+        content=content,
+        media_type=content_type,
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
     )

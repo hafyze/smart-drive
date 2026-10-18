@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException, UploadFile, status
@@ -95,7 +94,7 @@ class ReceiptService:
                 )
 
         # --------------------------------------------------------
-        # Save physical file
+        # Store the private file in MongoDB GridFS.
         # --------------------------------------------------------
 
         stored_file = (
@@ -146,7 +145,7 @@ class ReceiptService:
 
         except Exception:
 
-            # Rollback physical file if DB insert fails
+            # Roll back the GridFS file if its metadata insert fails.
             await self.storage_service.delete_file(
                 stored_file[
                     "stored_filename"
@@ -245,31 +244,15 @@ class ReceiptService:
         self,
         receipt_id: str,
         user_id: str,
-    ) -> tuple[Path, str, str]:
+    ) -> tuple[bytes, str, str]:
         receipt = await self._get_owned_receipt(
             receipt_id,
             user_id,
         )
 
-        stored_filename = receipt["stored_filename"]
-        if Path(stored_filename).name != stored_filename:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Receipt file not found.",
-            )
-
-        file_path = (
-            self.storage_service.upload_directory
-            / stored_filename
-        )
-        if not file_path.is_file():
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Receipt file not found.",
-            )
-
+        content = await self.storage_service.read_file(receipt["stored_filename"])
         return (
-            file_path,
+            content,
             receipt["content_type"],
             receipt["original_filename"],
         )
@@ -428,6 +411,12 @@ class ReceiptService:
                     status.HTTP_403_FORBIDDEN
                 ),
                 detail="Access denied.",
+            )
+
+        if vehicle.get("deleted_at") is not None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Vehicle not found.",
             )
 
         return vehicle

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CarFront, Gauge, MoreHorizontal } from "lucide-react";
+import { Gauge, MoreHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -21,6 +21,7 @@ import { Badge } from "@/shared/components/ui/badge";
 
 import type { VehicleListItem } from "../types/vehicle";
 import { DeleteVehicleDialog } from "./DeleteVehicleDialog";
+import { VehiclePhoto } from "./VehiclePhoto";
 
 interface VehicleCardProps {
     vehicle: VehicleListItem;
@@ -36,17 +37,11 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
         <div>
             <Card className="overflow-hidden">
             <div className="relative aspect-video bg-muted ">
-                {vehicle.photo_url ? (
-                    <img
-                        src={vehicle.photo_url}
-                        alt={`${vehicle.manufacturer} ${vehicle.model}`}
-                        className="h-full w-full object-cover"
-                    />
-                ) : (
-                    <div className="flex h-full items-center justify-center">
-                        <CarFront className="size-12 text-muted-foreground" />
-                    </div>
-                )}
+                <VehiclePhoto
+                    photoUrl={vehicle.photo_url}
+                    alt={`${vehicle.manufacturer} ${vehicle.model}`}
+                    className="h-full w-full object-cover"
+                />
 
                 <Badge className="absolute right-3 top-3">
                     {vehicle.status}
@@ -113,7 +108,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                             variant="destructive"
                             onClick={() => setDeleteDialogOpen(true)}
                         >
-                            Delete Vehicle
+                            Remove Vehicle
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

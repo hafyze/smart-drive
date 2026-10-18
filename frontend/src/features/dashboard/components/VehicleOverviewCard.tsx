@@ -1,4 +1,4 @@
-import { CarFront, Gauge } from "lucide-react";
+import { Gauge } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { Badge } from "@/shared/components/ui/badge";
@@ -11,6 +11,7 @@ import {
 } from "@/shared/components/ui/card";
 
 import type { VehicleListItem } from "@/features/garage/types/vehicle";
+import { VehiclePhoto } from "@/features/garage/components/VehiclePhoto";
 
 interface VehicleOverviewCardProps {
     vehicle: VehicleListItem;
@@ -25,17 +26,11 @@ export function VehicleOverviewCard({
         <Card>
             {/* Vehicle Image */}
             <div>
-                {vehicle.photo_url ? (
-                    <img
-                        src={vehicle.photo_url}
-                        alt={`${vehicle.manufacturer} ${vehicle.model}`}
-                        className="h-full w-full object-cover"
-                    />
-                ) : (
-                    <div className="flex h-full items-center justify-center">
-                        <CarFront className="size-12 text-muted-foreground" />
-                    </div>
-                )}
+                <VehiclePhoto
+                    photoUrl={vehicle.photo_url}
+                    alt={`${vehicle.manufacturer} ${vehicle.model}`}
+                    className="h-full w-full object-cover"
+                />
 
                 <Badge className="absolute right-3 top-3">
                     {vehicle.status}

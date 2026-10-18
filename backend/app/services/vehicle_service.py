@@ -2,7 +2,7 @@ from datetime import date, datetime, timezone
 from typing import Any
 
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, UploadFile, status
 
 from app.repositories.vehicle_repository import VehicleRepository
 from app.schemas.vehicle import (
@@ -14,11 +14,13 @@ from app.schemas.vehicle import (
 )
 from app.shared.utils.mongodb import to_object_id
 from app.shared.utils.serialization import serialize_document
+from app.services.vehicle_photo_storage_service import VehiclePhotoStorageService
 
 
 class VehicleService:
     def __init__(self):
         self.repository = VehicleRepository()
+        self.photo_storage = VehiclePhotoStorageService()
 
     # Create
     async def create_vehicle(self,user_id: str,vehicle: VehicleCreate,) -> VehicleResponse:
@@ -44,7 +46,8 @@ class VehicleService:
 
         vehicles = await self.repository.find_many(
             {
-                "user_id": user_id
+                "user_id": user_id,
+                "deleted_at": None,
             }
         )
 
@@ -95,15 +98,74 @@ class VehicleService:
 
         vehicle = await self._get_owned_vehicle(vehicle_id, user_id)
 
-        deleted = await self.repository.delete(
+        now = datetime.now(timezone.utc)
+        updated = await self.repository.update(
             {
-                "_id": vehicle["_id"]
+                "_id": vehicle["_id"],
+                "user_id": user_id,
+            },
+            {
+                "deleted_at": now,
+                "updated_at": now,
             }
         )
 
+        if updated is not None:
+            await self.photo_storage.delete(vehicle.get("photo_filename"))
+
         return {
-            "success": deleted
+            "success": updated is not None
         }
+
+    async def upload_photo(
+        self, vehicle_id: str, user_id: str, file: UploadFile
+    ) -> VehicleResponse:
+        vehicle = await self._get_owned_vehicle(vehicle_id, user_id)
+        filename, content_type = await self.photo_storage.save(file)
+        old_filename = vehicle.get("photo_filename")
+        try:
+            updated = await self.repository.update(
+                {"_id": vehicle["_id"]},
+                {
+                    "photo_filename": filename,
+                    "photo_content_type": content_type,
+                    "photo_url": f"/vehicles/{vehicle_id}/photo",
+                    "updated_at": datetime.now(timezone.utc),
+                },
+            )
+        except Exception:
+            await self.photo_storage.delete(filename)
+            raise
+        if updated is None:
+            await self.photo_storage.delete(filename)
+            raise HTTPException(status_code=500, detail="Unable to save vehicle photo.")
+        await self.photo_storage.delete(old_filename)
+        return VehicleResponse.model_validate(serialize_document(updated))
+
+    async def delete_photo(self, vehicle_id: str, user_id: str) -> VehicleResponse:
+        vehicle = await self._get_owned_vehicle(vehicle_id, user_id)
+        old_filename = vehicle.get("photo_filename")
+        updated = await self.repository.update(
+            {"_id": vehicle["_id"]},
+            {
+                "photo_filename": None,
+                "photo_content_type": None,
+                "photo_url": None,
+                "updated_at": datetime.now(timezone.utc),
+            },
+        )
+        if updated is None:
+            raise HTTPException(status_code=500, detail="Unable to remove vehicle photo.")
+        await self.photo_storage.delete(old_filename)
+        return VehicleResponse.model_validate(serialize_document(updated))
+
+    async def get_photo(self, vehicle_id: str, user_id: str):
+        vehicle = await self._get_owned_vehicle(vehicle_id, user_id)
+        filename = vehicle.get("photo_filename")
+        if not filename:
+            raise HTTPException(status_code=404, detail="Vehicle photo not found.")
+        content = await self.photo_storage.read(filename)
+        return content, vehicle.get("photo_content_type") or "application/octet-stream"
 
     # Private Helper:
     async def _get_owned_vehicle(self, vehicle_id: str, user_id: str) -> dict[str, Any]:
@@ -121,6 +183,13 @@ class VehicleService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied.",
             )
+
+        if vehicle.get("deleted_at") is not None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Vehicle not found.",
+            )
+
         return vehicle
 
     @staticmethod

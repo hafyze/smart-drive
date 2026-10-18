@@ -27,7 +27,8 @@ import {
 } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
 
-import { useCreateVehicle } from "../hooks/useVehicles";
+import { useCreateVehicle, useUploadVehiclePhoto } from "../hooks/useVehicles";
+import { VehiclePhotoField } from "./VehiclePhotoField";
 import {
     vehicleCreateSchema,
     type VehicleCreateFormInput,
@@ -38,6 +39,8 @@ export function AddVehicleDialog() {
     const [open, setOpen] = useState(false);
 
     const createVehicle = useCreateVehicle();
+    const uploadPhoto = useUploadVehiclePhoto();
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
 
     const form = useForm<
         VehicleCreateFormInput,
@@ -66,7 +69,8 @@ export function AddVehicleDialog() {
 
     const onSubmit = async (values: VehicleCreateFormValues) => {
         try {
-            await createVehicle.mutateAsync({
+            let photoUploadFailed = false;
+            const created = await createVehicle.mutateAsync({
                 ...values,
                 engine: values.engine || null,
                 plate_number: values.plate_number || null,
@@ -77,13 +81,24 @@ export function AddVehicleDialog() {
                 notes: values.notes || null,
             });
 
+            if (photoFile) {
+                try {
+                    await uploadPhoto.mutateAsync({ vehicleId: created.id, file: photoFile });
+                } catch {
+                    photoUploadFailed = true;
+                }
+            }
+
             toast.add({
-                title: "Vehicle added",
-                description: `${values.nickname} has been added to your garage.`,
-                type: "success",
+                title: photoUploadFailed ? "Vehicle added without photo" : "Vehicle added",
+                description: photoUploadFailed
+                    ? "Edit the vehicle to retry its photo upload."
+                    : `${values.nickname} has been added to your garage.`,
+                type: photoUploadFailed ? "error" : "success",
             })
 
             form.reset();
+            setPhotoFile(null);
             setOpen(false);
         }catch (error) {
             let message = "Unable to add the vehicle. Please try again.";
@@ -104,11 +119,12 @@ export function AddVehicleDialog() {
     };
 
     const handleOpenChange = (value: boolean) => {
-        if (!createVehicle.isPending) {
+        if (!createVehicle.isPending && !uploadPhoto.isPending) {
             setOpen(value);
 
             if (!value) {
                 form.reset();
+                setPhotoFile(null);
             }
         }
     };
@@ -385,15 +401,7 @@ export function AddVehicleDialog() {
                                 </h3>
                             </div>
 
-                            <FormField
-                                label="Photo URL"
-                                error={form.formState.errors.photo_url?.message}
-                            >
-                                <Input
-                                    placeholder="https://..."
-                                    {...form.register("photo_url")}
-                                />
-                            </FormField>
+                            <VehiclePhotoField file={photoFile} onFileChange={setPhotoFile} />
 
                             <FormField
                                 label="Notes"
@@ -411,7 +419,7 @@ export function AddVehicleDialog() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={createVehicle.isPending}
+                                disabled={createVehicle.isPending || uploadPhoto.isPending}
                                 onClick={() => handleOpenChange(false)}
                             >
                                 Cancel
@@ -419,13 +427,13 @@ export function AddVehicleDialog() {
 
                             <Button
                                 type="submit"
-                                disabled={createVehicle.isPending}
+                                disabled={createVehicle.isPending || uploadPhoto.isPending}
                             >
-                                {createVehicle.isPending && (
+                                {(createVehicle.isPending || uploadPhoto.isPending) && (
                                     <Loader2 className="animate-spin" />
                                 )}
 
-                                {createVehicle.isPending
+                                {createVehicle.isPending || uploadPhoto.isPending
                                     ? "Adding..."
                                     : "Add Vehicle"}
                             </Button>

@@ -36,8 +36,8 @@ export function DeleteVehicleDialog({
             await deleteVehicle.mutateAsync(vehicle.id);
 
             toast.add({
-                title: "Vehicle deleted",
-                description: `${vehicle.nickname} has been removed from your garage.`,
+                title: "Vehicle removed",
+                description: `${vehicle.nickname} has been removed from your garage. Its service history and receipts are kept.`,
                 type: "success",
             });
 
@@ -76,17 +76,15 @@ export function DeleteVehicleDialog({
         >
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>
-                        Delete Vehicle?
-                    </DialogTitle>
+                    <DialogTitle>Remove Vehicle?</DialogTitle>
 
                     <DialogDescription>
                         This will remove{" "}
                         <span className="font-medium text-foreground">
                             {vehicle.nickname}
                         </span>{" "}
-                        from your garage. This action cannot be
-                        undone.
+                        from your garage. Its service history and
+                        receipts will be kept.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -118,7 +116,7 @@ export function DeleteVehicleDialog({
 
                         {deleteVehicle.isPending
                             ? "Deleting..."
-                            : "Delete Vehicle"}
+                            : "Remove Vehicle"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

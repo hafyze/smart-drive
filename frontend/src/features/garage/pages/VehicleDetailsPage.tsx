@@ -1,4 +1,4 @@
-import { ArrowLeft, CarFront, Gauge } from "lucide-react";
+import { ArrowLeft, Gauge } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { History } from "lucide-react";
 
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 
 import { EditVehicleDialog } from "../components/EditVehicleDialog";
+import { VehiclePhoto } from "../components/VehiclePhoto";
 
 import { useVehicle } from "../hooks/useVehicles";
 
@@ -167,17 +168,11 @@ export default function VehicleDetailsPage() {
                     <div className="grid gap-6 md:grid-cols-[240px_1fr]">
                         {/* Vehicle Image */}
                         <div className="aspect-4/3 overflow-hidden rounded-xl bg-muted">
-                            {vehicle.photo_url ? (
-                                <img
-                                    src={vehicle.photo_url}
-                                    alt={`${vehicle.manufacturer} ${vehicle.model}`}
-                                    className="h-full w-full object-cover"
-                                />
-                            ) : (
-                                <div className="flex h-full items-center justify-center">
-                                    <CarFront className="size-14 text-muted-foreground" />
-                                </div>
-                            )}
+                            <VehiclePhoto
+                                photoUrl={vehicle.photo_url}
+                                alt={`${vehicle.manufacturer} ${vehicle.model}`}
+                                className="h-full w-full object-cover"
+                            />
                         </div>
 
                         {/* Vehicle Summary */}
