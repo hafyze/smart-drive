@@ -126,15 +126,18 @@ const STATUS_CONTENT: Record<AreaStatus, { label: string; description: string; c
 };
 
 function VehicleSelector({ vehicles, value, onChange }: { vehicles: VehicleListItem[]; value: string; onChange: (value: string) => void }) {
+    const selectedVehicle = vehicles.find((vehicle) => vehicle.id === value);
     return (
         <Select value={value} onValueChange={(nextValue) => { if (typeof nextValue === "string") onChange(nextValue); }}>
             <SelectTrigger className="w-full sm:w-80" aria-label="Choose vehicle">
-                <SelectValue placeholder="Select a vehicle" />
+                <SelectValue placeholder="Select a vehicle">
+                    {selectedVehicle ? `${selectedVehicle.manufacturer} ${selectedVehicle.model}` : undefined}
+                </SelectValue>
             </SelectTrigger>
             <SelectContent>
                 {vehicles.map((vehicle) => (
                     <SelectItem key={vehicle.id} value={vehicle.id}>
-                        {vehicle.nickname} · {vehicle.manufacturer} {vehicle.model}
+                        {vehicle.manufacturer} {vehicle.model} · {vehicle.nickname}
                     </SelectItem>
                 ))}
             </SelectContent>

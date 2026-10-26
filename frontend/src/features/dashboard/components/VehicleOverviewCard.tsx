@@ -30,11 +30,11 @@ export function VehicleOverviewCard({
                 aria-label={`View ${vehicle.nickname}`}
             />
             {/* Vehicle Image */}
-            <div>
+            <div className="relative aspect-video max-h-72 w-full overflow-hidden bg-muted">
                 <VehiclePhoto
                     photoUrl={vehicle.photo_url}
                     alt={`${vehicle.manufacturer} ${vehicle.model}`}
-                    className="h-full w-full object-cover"
+                    className="block h-full w-full object-cover"
                 />
 
                 <Badge className="absolute right-3 top-3">

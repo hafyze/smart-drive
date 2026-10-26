@@ -29,6 +29,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 
 import { useCreateVehicle, useUploadVehiclePhoto } from "../hooks/useVehicles";
 import { VehiclePhotoField } from "./VehiclePhotoField";
+import { MakeModelFields } from "./MakeModelFields";
 import {
     vehicleCreateSchema,
     type VehicleCreateFormInput,
@@ -140,7 +141,7 @@ export function AddVehicleDialog() {
                 }
             />
 
-            <DialogContent className="max-h-[90vh]">
+            <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] overflow-hidden sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Add Vehicle</DialogTitle>
 
@@ -148,7 +149,7 @@ export function AddVehicleDialog() {
                         Add a vehicle to your Smart Drive garage.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[70vh] pr-4">
+                <ScrollArea className="max-h-[calc(100dvh-10rem)] min-h-0 pr-4">
                     <form
                         onSubmit={form.handleSubmit(onSubmit)}
                         className="space-y-6"
@@ -176,25 +177,14 @@ export function AddVehicleDialog() {
                                     />
                                 </FormField>
 
-                                <FormField
-                                    label="Manufacturer"
-                                    error={form.formState.errors.manufacturer?.message}
-                                >
-                                    <Input
-                                        placeholder="e.g. Perodua"
-                                        {...form.register("manufacturer")}
-                                    />
-                                </FormField>
-
-                                <FormField
-                                    label="Model"
-                                    error={form.formState.errors.model?.message}
-                                >
-                                    <Input
-                                        placeholder="e.g. Myvi"
-                                        {...form.register("model")}
-                                    />
-                                </FormField>
+                                <MakeModelFields
+                                    manufacturer={form.watch("manufacturer")}
+                                    model={form.watch("model")}
+                                    manufacturerError={form.formState.errors.manufacturer?.message}
+                                    modelError={form.formState.errors.model?.message}
+                                    onManufacturerChange={(value) => form.setValue("manufacturer", value, { shouldDirty: true, shouldValidate: true })}
+                                    onModelChange={(value) => form.setValue("model", value, { shouldDirty: true, shouldValidate: true })}
+                                />
 
                                 <FormField
                                     label="Variant"
