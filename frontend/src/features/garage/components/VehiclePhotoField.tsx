@@ -92,7 +92,9 @@ export function VehiclePhotoField({
                     />
                 </div>
             </div>
-            <p className="text-xs text-muted-foreground">JPEG, PNG or WEBP, up to 10 MB.</p>
+            <p className="text-xs text-muted-foreground">
+                JPEG, PNG or WEBP, up to 10 MB. Landscape photos work best; images are cropped to fit.
+            </p>
             {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
     );
