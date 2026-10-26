@@ -9,7 +9,11 @@ import {
     Thermometer,
     Wind,
     Wrench,
+    ChevronDown,
+    ChevronUp,
 } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/shared/components/ui/button";
 
 import type { ServiceHistoryVisit } from "../types/serviceHistory";
 import { ServiceVisitReceipts } from "@/features/receipts/components/ServiceVisitReceipts";
@@ -100,6 +104,8 @@ export function ServiceHistoryTimeline({
     records,
     vehicleId
 }: ServiceHistoryTimelineProps) {
+    const [expandedRecords, setExpandedRecords] = useState<Record<string, boolean>>({});
+
     return (
         <div className="relative">
             {records.map((record, index) => {
@@ -194,68 +200,63 @@ export function ServiceHistoryTimeline({
                                     )}
                                 </div>
 
-                                <div className="mt-4 space-y-2">
-                                    {record.items.map((item) => {
-                                        const MaintenanceIcon =
-                                            getMaintenanceIcon(
-                                                item.type,
-                                            );
-
-                                        return (
-                                            <div
-                                                key={item.id}
-                                                className="rounded-lg bg-muted/40 p-3"
-                                            >
-                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                                    <div className="min-w-0">
-                                                        <div className="flex items-center gap-2">
-                                                            <MaintenanceIcon className="size-4 shrink-0 text-muted-foreground" />
-
-                                                            <p className="font-medium">
-                                                                {formatMaintenanceType(
-                                                                    item.type,
-                                                                )}
-                                                            </p>
-                                                        </div>
-
-                                                        {item.description && (
-                                                            <p className="mt-1 text-sm text-muted-foreground">
-                                                                {
-                                                                    item.description
-                                                                }
-                                                            </p>
-                                                        )}
-                                                    </div>
-
-                                                    <p className="shrink-0 text-sm font-medium">
-                                                        {formatCost(
-                                                            item.cost,
-                                                        )}
-                                                    </p>
-                                                </div>
-
-                                                {item.notes && (
-                                                    <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">
-                                                        {item.notes}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
+                                <div className="mt-4 flex justify-end border-t pt-3">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        aria-expanded={Boolean(expandedRecords[record.id])}
+                                        aria-controls={`service-history-details-${record.id}`}
+                                        onClick={() => setExpandedRecords((current) => ({
+                                            ...current,
+                                            [record.id]: !current[record.id],
+                                        }))}
+                                    >
+                                        {expandedRecords[record.id] ? (
+                                            <><ChevronUp /> Hide details</>
+                                        ) : (
+                                            <><ChevronDown /> View details</>
+                                        )}
+                                    </Button>
                                 </div>
 
-                                {record.notes && (
-                                    <div className="mt-4 rounded-lg border p-3">
-                                        <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                                            {record.notes}
-                                        </p>
+                                {expandedRecords[record.id] && (
+                                    <div id={`service-history-details-${record.id}`} className="mt-4 space-y-2">
+                                        {record.items.map((item) => {
+                                            const MaintenanceIcon = getMaintenanceIcon(item.type);
+
+                                            return (
+                                                <div key={item.id} className="rounded-lg bg-muted/40 p-3">
+                                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <MaintenanceIcon className="size-4 shrink-0 text-muted-foreground" />
+                                                                <p className="font-medium">{formatMaintenanceType(item.type)}</p>
+                                                            </div>
+                                                            {item.description && (
+                                                                <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
+                                                            )}
+                                                        </div>
+                                                        <p className="shrink-0 text-sm font-medium">{formatCost(item.cost)}</p>
+                                                    </div>
+                                                    {item.notes && (
+                                                        <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{item.notes}</p>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    {record.notes && (
+                                        <div className="mt-4 rounded-lg border p-3">
+                                            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{record.notes}</p>
+                                        </div>
+                                    )}
+
+                                    <ServiceVisitReceipts
+                                        vehicleId={vehicleId}
+                                        serviceVisitId={record.id}
+                                    />
                                     </div>
                                 )}
-
-                                <ServiceVisitReceipts
-                                    vehicleId={vehicleId}
-                                    serviceVisitId={record.id}
-                                />
                             </div>
                         </div>
                     </div>

@@ -11,7 +11,7 @@ import { VehiclePhoto } from "../components/VehiclePhoto";
 
 import { useVehicle } from "../hooks/useVehicles";
 
-import { MaintenanceList } from "@/features/maintenance/components/MaintenanceList";
+import { MaintenanceVisitTable } from "@/features/maintenance/components/MaintenanceVisitTable";
 import { AddMaintenanceDialog } from "@/features/maintenance/components/AddMaintenanceDialog";
 
 interface VehicleDetailProps {
@@ -270,8 +270,8 @@ export default function VehicleDetailsPage() {
 
             {/* Maintenance */}
             <Card>
-                <div>
-                    <CardHeader>
+                <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
                         <h2 className="font-heading text-lg font-semibold">
                             Maintenance
                         </h2>
@@ -279,13 +279,13 @@ export default function VehicleDetailsPage() {
                         <p className="text-sm text-muted-foreground">
                             Maintenance history and service records
                         </p>
-                    </CardHeader>
+                    </div>
+                    <AddMaintenanceDialog vehicleId={vehicle.id} />
+                </CardHeader>
 
-                    <CardContent>
-                        <MaintenanceList vehicleId={vehicle.id} />
-                    </CardContent>
-                </div>
-                <AddMaintenanceDialog vehicleId={vehicle.id} />
+                <CardContent>
+                    <MaintenanceVisitTable vehicleId={vehicle.id} />
+                </CardContent>
             </Card>
         </div>
     )
