@@ -59,7 +59,7 @@ export function VehiclePhotoField({
                     {preview ? (
                         <img src={preview} alt="Selected vehicle" className="h-full w-full object-cover" />
                     ) : (
-                        <VehiclePhoto photoUrl={photoUrl} alt="Vehicle photo" className="h-full w-full object-cover" />
+                        <VehiclePhoto photoUrl={photoUrl} alt="Vehicle photo" className="h-full w-full object-cover" loading="eager" />
                     )}
                 </div>
                 <div className="flex flex-wrap gap-2">

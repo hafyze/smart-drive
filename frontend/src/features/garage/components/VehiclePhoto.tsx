@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CarFront } from "lucide-react";
 import api from "@/shared/api/axios";
 
@@ -6,13 +6,35 @@ interface VehiclePhotoProps {
     photoUrl?: string | null;
     alt: string;
     className?: string;
+    loading?: "eager" | "lazy";
 }
 
-export function VehiclePhoto({ photoUrl, alt, className = "" }: VehiclePhotoProps) {
+export function VehiclePhoto({ photoUrl, alt, className = "", loading = "lazy" }: VehiclePhotoProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
     const [loadedPhoto, setLoadedPhoto] = useState<{ photoUrl: string; src: string }>();
+    const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
+    const shouldLoadPrivatePhoto = loading === "eager"
+        || hasEnteredViewport
+        || typeof IntersectionObserver === "undefined";
 
     useEffect(() => {
-        if (!photoUrl?.startsWith("/vehicles/")) return;
+        if (!photoUrl?.startsWith("/vehicles/") || shouldLoadPrivatePhoto) return;
+
+        const target = containerRef.current;
+        if (!target) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+                setHasEnteredViewport(true);
+                observer.disconnect();
+            }
+        }, { rootMargin: "160px" });
+        observer.observe(target);
+        return () => observer.disconnect();
+    }, [photoUrl, shouldLoadPrivatePhoto]);
+
+    useEffect(() => {
+        if (!photoUrl?.startsWith("/vehicles/") || !shouldLoadPrivatePhoto) return;
 
         const controller = new AbortController();
         let objectUrl: string | undefined;
@@ -30,7 +52,7 @@ export function VehiclePhoto({ photoUrl, alt, className = "" }: VehiclePhotoProp
             controller.abort();
             if (objectUrl) URL.revokeObjectURL(objectUrl);
         };
-    }, [photoUrl]);
+    }, [photoUrl, shouldLoadPrivatePhoto]);
 
     const src = !photoUrl
         ? undefined
@@ -38,11 +60,15 @@ export function VehiclePhoto({ photoUrl, alt, className = "" }: VehiclePhotoProp
           ? loadedPhoto?.photoUrl === photoUrl ? loadedPhoto.src || undefined : undefined
           : photoUrl;
 
-    return src ? (
-        <img src={src} alt={alt} className={className} />
-    ) : (
-        <div className={`flex items-center justify-center bg-muted ${className}`} aria-label={alt}>
-            <CarFront className="size-12 text-muted-foreground" />
+    return (
+        <div ref={containerRef} className={`block ${className}`}>
+            {src ? (
+                <img src={src} alt={alt} className="size-full object-cover" loading={loading} />
+            ) : (
+                <div role="img" aria-label={alt} className="flex size-full items-center justify-center bg-muted">
+                    <CarFront className="size-12 text-muted-foreground" aria-hidden="true" />
+                </div>
+            )}
         </div>
     );
 }

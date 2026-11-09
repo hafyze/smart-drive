@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
@@ -13,7 +13,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -36,8 +35,12 @@ import {
     type VehicleCreateFormValues,
 } from "../validation/vehicleSchema";
 
-export function AddVehicleDialog() {
-    const [open, setOpen] = useState(false);
+interface AddVehicleDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}
+
+export function AddVehicleDialog({ open, onOpenChange }: AddVehicleDialogProps) {
 
     const createVehicle = useCreateVehicle();
     const uploadPhoto = useUploadVehiclePhoto();
@@ -100,7 +103,7 @@ export function AddVehicleDialog() {
 
             form.reset();
             setPhotoFile(null);
-            setOpen(false);
+            onOpenChange(false);
         }catch (error) {
             let message = "Unable to add the vehicle. Please try again.";
 
@@ -121,7 +124,7 @@ export function AddVehicleDialog() {
 
     const handleOpenChange = (value: boolean) => {
         if (!createVehicle.isPending && !uploadPhoto.isPending) {
-            setOpen(value);
+            onOpenChange(value);
 
             if (!value) {
                 form.reset();
@@ -132,15 +135,6 @@ export function AddVehicleDialog() {
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger
-                render={
-                    <Button>
-                        <Plus />
-                        Add Vehicle
-                    </Button>
-                }
-            />
-
             <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] overflow-hidden sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Add Vehicle</DialogTitle>

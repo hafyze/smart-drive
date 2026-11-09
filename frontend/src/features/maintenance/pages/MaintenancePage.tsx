@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { useVehicles } from "@/features/garage/hooks/useVehicles";
 import type { VehicleListItem } from "@/features/garage/types/vehicle";
@@ -30,9 +30,19 @@ function VehicleSelector({ vehicles, value, onChange }: { vehicles: VehicleListI
 
 export default function MaintenancePage() {
     const { data: vehicles, isLoading: vehiclesLoading, isError: vehiclesError } = useVehicles();
-    const [selectedVehicleId, setSelectedVehicleId] = useState("");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const selectedVehicleId = searchParams.get("vehicleId") ?? "";
     const activeVehicle = vehicles?.find((vehicle) => vehicle.id === selectedVehicleId) ?? vehicles?.[0];
     const { data: visits, isLoading: maintenanceLoading, isError: maintenanceError } = useMaintenance(activeVehicle?.id);
+
+    const selectVehicle = (vehicleId: string) => {
+        setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            if (vehicleId) next.set("vehicleId", vehicleId);
+            else next.delete("vehicleId");
+            return next;
+        });
+    };
 
     return (
         <div className="space-y-6 p-6">
@@ -50,7 +60,7 @@ export default function MaintenancePage() {
                 <div className="space-y-6">
                     <div className="space-y-2">
                         <p className="text-sm font-medium">Vehicle</p>
-                        <VehicleSelector vehicles={vehicles ?? []} value={activeVehicle.id} onChange={setSelectedVehicleId} />
+                        <VehicleSelector vehicles={vehicles ?? []} value={activeVehicle.id} onChange={selectVehicle} />
                         <p className="text-xs text-muted-foreground">{activeVehicle.manufacturer} {activeVehicle.model} · {activeVehicle.current_mileage.toLocaleString()} km recorded</p>
                     </div>
 

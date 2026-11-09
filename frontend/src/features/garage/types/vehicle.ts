@@ -78,6 +78,9 @@ export interface VehicleListItem {
     current_mileage: number;
     status: VehicleStatus;
     photo_url: string | null;
+    fuel_type?: FuelType | null;
+    transmission?: TransmissionType | null;
+    plate_number?: string | null;
 }
 
 /**

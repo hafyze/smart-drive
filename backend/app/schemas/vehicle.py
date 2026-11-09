@@ -87,4 +87,7 @@ class VehicleListItem(BaseModel):
     current_mileage: int
     status: VehicleStatus
     photo_url: str | None = None
+    fuel_type: FuelType | None = None
+    transmission: TransmissionType | None = None
+    plate_number: str | None = None
     model_config = ConfigDict(from_attributes=True)

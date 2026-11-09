@@ -38,7 +38,9 @@ import {
 } from "../validation/vehicleSchema";
 
 interface EditVehicleDialogProps {
-    vehicle: VehicleResponse
+    vehicle: VehicleResponse;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
 interface FormFieldProps {
@@ -69,8 +71,13 @@ function FormField({
 
 export function EditVehicleDialog({
     vehicle,
+    open: controlledOpen,
+    onOpenChange: onControlledOpenChange,
 }: EditVehicleDialogProps) {
-    const [open, setOpen] = useState(false)
+    const [localOpen, setLocalOpen] = useState(false);
+    const open = controlledOpen ?? localOpen;
+    const isControlled = controlledOpen !== undefined;
+    const setOpen = onControlledOpenChange ?? setLocalOpen;
 
     const updateVehicle = useUpdateVehicle();
     const uploadPhoto = useUploadVehiclePhoto();
@@ -187,14 +194,16 @@ export function EditVehicleDialog({
             open={open}
             onOpenChange={handleOpenChange}
         >
-            <DialogTrigger
-                render={
-                    <Button variant="outline">
-                        <Pencil className="mr-1" />
-                        Edit Vehicle
-                    </Button>
-                }
-            />
+            {!isControlled && (
+                <DialogTrigger
+                    render={
+                        <Button variant="outline">
+                            <Pencil className="mr-1" />
+                            Edit Vehicle
+                        </Button>
+                    }
+                />
+            )}
 
             <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] overflow-hidden sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
                 <DialogHeader>

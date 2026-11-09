@@ -19,6 +19,7 @@ export function VehicleHero({ vehicle }: { vehicle: VehicleResponse }) {
                 photoUrl={vehicle.photo_url}
                 alt={`${vehicle.manufacturer} ${vehicle.model}`}
                 className="absolute inset-0 size-full object-cover object-center opacity-75"
+                loading="eager"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-black/15" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/25" />

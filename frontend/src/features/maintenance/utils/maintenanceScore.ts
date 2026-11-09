@@ -11,6 +11,11 @@ export interface ScoredArea {
     schedules: Array<{ type: MaintenanceType; dueDate: string | null; dueMileage: number | null }>;
 }
 
+export interface LatestMaintenanceRecord {
+    visit: ServiceVisit;
+    item: MaintenanceItem;
+}
+
 export const AREA_TYPES: Record<AreaName, MaintenanceType[]> = {
     Engine: ["ENGINE_OIL", "OIL_FILTER", "AIR_FILTER", "CABIN_FILTER", "SPARK_PLUG", "TIMING_BELT"],
     Transmission: ["TRANSMISSION"],
@@ -52,26 +57,22 @@ function currentLocalDate() {
     return `${date.getFullYear()}-${month}-${day}`;
 }
 
-function mostRecentSchedule(maintenance: MaintenanceItem[], visits: ServiceVisit[]) {
-    const serviceDateByItem = new Map<string, { date: string; mileage: number }>();
-    for (const visit of visits) {
-        for (const item of visit.items) {
-            serviceDateByItem.set(item.id, { date: visit.service_date, mileage: visit.mileage_at_service });
-        }
-    }
+export function getLatestMaintenanceRecords(visits: ServiceVisit[]): LatestMaintenanceRecord[] {
+    const uniqueVisits = new Map(visits.map((visit) => [visit.id, visit]));
+    const candidates = [...uniqueVisits.values()].flatMap((visit) =>
+        visit.items.map((item) => ({ visit, item })),
+    );
+    candidates.sort((a, b) =>
+        b.visit.service_date.localeCompare(a.visit.service_date)
+        || b.visit.mileage_at_service - a.visit.mileage_at_service
+        || b.visit.updated_at.localeCompare(a.visit.updated_at),
+    );
 
-    const latestByType = new Map<MaintenanceType, MaintenanceItem>();
-    const sorted = [...maintenance].sort((a, b) => {
-        const aVisit = serviceDateByItem.get(a.id);
-        const bVisit = serviceDateByItem.get(b.id);
-        return (bVisit?.date ?? "").localeCompare(aVisit?.date ?? "") ||
-            (bVisit?.mileage ?? 0) - (aVisit?.mileage ?? 0);
-    });
-
-    for (const item of sorted) {
-        if (!latestByType.has(item.type)) latestByType.set(item.type, item);
+    const latestByType = new Map<MaintenanceType, LatestMaintenanceRecord>();
+    for (const record of candidates) {
+        if (!latestByType.has(record.item.type)) latestByType.set(record.item.type, record);
     }
-    return latestByType;
+    return [...latestByType.values()];
 }
 
 function getAreaStatus(
@@ -83,24 +84,43 @@ function getAreaStatus(
 
     let dueSoon = false;
     for (const schedule of schedules) {
-        if (schedule.dueMileage !== null) {
-            const distance = schedule.dueMileage - currentMileage;
-            if (distance < 0) return "OVERDUE";
-            if (distance <= 1000) dueSoon = true;
-        }
-        if (schedule.dueDate) {
-            if (schedule.dueDate < today) return "OVERDUE";
-            const due = new Date(`${schedule.dueDate}T00:00:00`);
-            const now = new Date(`${today}T00:00:00`);
-            const daysRemaining = Math.round((due.getTime() - now.getTime()) / 86_400_000);
-            if (daysRemaining <= 30) dueSoon = true;
-        }
+        if (schedule.dueMileage !== null && schedule.dueMileage < currentMileage) return "OVERDUE";
+        if (schedule.dueDate && schedule.dueDate < today) return "OVERDUE";
+        if (isScheduleDueSoon(schedule, currentMileage, today)) dueSoon = true;
     }
     return dueSoon ? "DUE_SOON" : "UP_TO_DATE";
 }
 
+export function isScheduleDueSoon(
+    schedule: ScoredArea["schedules"][number],
+    currentMileage: number,
+    today = currentLocalDate(),
+): boolean {
+    if (schedule.dueMileage !== null) {
+        const distance = schedule.dueMileage - currentMileage;
+        if (distance >= 0 && distance <= 1000) return true;
+    }
+    if (schedule.dueDate && schedule.dueDate >= today) {
+        const due = new Date(`${schedule.dueDate.slice(0, 10)}T00:00:00`);
+        const now = new Date(`${today}T00:00:00`);
+        const daysRemaining = Math.round((due.getTime() - now.getTime()) / 86_400_000);
+        return Number.isFinite(daysRemaining) && daysRemaining <= 30;
+    }
+    return false;
+}
+
+export function classifySchedule(
+    schedule: ScoredArea["schedules"][number],
+    currentMileage: number,
+    today = currentLocalDate(),
+): AreaStatus {
+    return getAreaStatus([schedule], currentMileage, today);
+}
+
 export function calculateAreas(vehicle: Pick<VehicleListItem, "current_mileage">, visits: ServiceVisit[]): ScoredArea[] {
-    const latestByType = mostRecentSchedule(visits.flatMap((visit) => visit.items), visits);
+    const latestByType = new Map(
+        getLatestMaintenanceRecords(visits).map(({ item }) => [item.type, item]),
+    );
     const today = currentLocalDate();
 
     return (Object.keys(AREA_TYPES) as AreaName[]).map((name) => {
