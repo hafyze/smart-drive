@@ -1,7 +1,7 @@
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import (
     BaseSettings,
     SettingsConfigDict,
@@ -34,13 +34,48 @@ class Settings(BaseSettings):
 
     tavily_api_key: str = ""
     tavily_search_depth: str = "advanced"
-    tavily_max_results: int = 5
+    tavily_max_results: int = Field(default=5, ge=1, le=5)
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Local precedence: process environment > .env.local > .env > defaults.
+        # Production deployments must inject settings through their secret store;
+        # never load developer dotenv files when APP_ENV=production is explicit.
+        env_file=(".env", ".env.local"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls,
+        init_settings,
+        env_settings,
+        dotenv_settings,
+        file_secret_settings,
+    ):
+        init_app_env = getattr(init_settings, "init_kwargs", {}).get("app_env")
+        process_app_env = getattr(env_settings, "env_vars", {}).get("app_env")
+        dotenv_app_env = getattr(dotenv_settings, "env_vars", {}).get("app_env")
+        selected_app_env = next(
+            (
+                value.strip().casefold()
+                for value in (init_app_env, process_app_env, dotenv_app_env)
+                if isinstance(value, str) and value.strip()
+            ),
+            "",
+        )
+        production_selected_outside_dotenv = any(
+            isinstance(value, str) and value.strip().casefold() == "production"
+            for value in (init_app_env, process_app_env)
+        )
+        if selected_app_env == "production":
+            if not production_selected_outside_dotenv:
+                raise ValueError(
+                    "Set APP_ENV=production in the process environment; production mode cannot be selected from dotenv files."
+                )
+            return init_settings, env_settings, file_secret_settings
+        return init_settings, env_settings, dotenv_settings, file_secret_settings
 
     @model_validator(mode="after")
     def validate_production_settings(self):

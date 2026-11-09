@@ -134,7 +134,7 @@ export default function VehicleDetailsPage() {
                 )}
                 {activeTab === "history" && <VehicleServiceHistoryTab vehicleId={vehicle.id} />}
                 {activeTab === "maintenance" && <VehicleMaintenanceTab vehicle={vehicle} visits={visits ?? []} isLoading={visitsLoading} isError={visitsError} />}
-                {activeTab === "insights" && <VehicleInsightsTab vehicleId={vehicle.id} />}
+                {activeTab === "insights" && <VehicleInsightsTab vehicle={vehicle} />}
                 {activeTab === "documents" && <VehicleDocumentsTab vehicleId={vehicle.id} />}
             </section>
         </div>

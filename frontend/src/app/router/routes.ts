@@ -10,5 +10,6 @@ export const ROUTES = {
   GARAGE_VEHICLE: "/garage/:vehicleId",
 
   AI: "/ai",
+  MAINTENANCE_PLANNER: "/maintenance/planner",
 
 } as const;

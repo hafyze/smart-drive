@@ -1,4 +1,8 @@
-from datetime import datetime
+import hashlib
+from datetime import datetime, timedelta
+
+from pymongo import ReturnDocument
+from pymongo.errors import DuplicateKeyError
 
 from app.repositories.base_repository import BaseRepository
 
@@ -39,3 +43,33 @@ class MaintenanceKnowledgeRepository(BaseRepository):
             },
             upsert=True,
         )
+
+    async def acquire_research_cooldown(
+        self,
+        user_id: str,
+        vehicle_id: str,
+        now: datetime,
+        duration: timedelta,
+    ) -> datetime | None:
+        """Return the active cooldown expiry, or None when this request acquired it."""
+        cooldown_key = hashlib.sha256(
+            f"{user_id}:{vehicle_id}".encode("utf-8")
+        ).hexdigest()
+        collection = self.collection.database["ai_research_cooldowns"]
+        expires_at = now + duration
+        updated = await collection.find_one_and_update(
+            {"_id": cooldown_key, "expires_at": {"$lte": now}},
+            {"$set": {"expires_at": expires_at}},
+            return_document=ReturnDocument.AFTER,
+        )
+        if updated is not None:
+            return None
+
+        try:
+            await collection.insert_one({"_id": cooldown_key, "expires_at": expires_at})
+            return None
+        except DuplicateKeyError:
+            active = await collection.find_one({"_id": cooldown_key})
+            if active is None:
+                raise RuntimeError("Unable to establish the AI research cooldown.")
+            return active["expires_at"]

@@ -3,6 +3,7 @@ from app.services.auth_service import AuthService
 from app.services.maintenance_service import MaintenanceService
 from app.services.service_history_service import ServiceHistoryService
 from app.services.receipt_service import ReceiptService
+from app.services.maintenance_plan_service import MaintenancePlanService
 
 def get_vehicle_service() -> VehicleService:
     return VehicleService()
@@ -18,3 +19,6 @@ def get_service_history_service() -> ServiceHistoryService:
 
 def get_receipt_service() -> ReceiptService:
     return ReceiptService()
+
+def get_maintenance_plan_service() -> MaintenancePlanService:
+    return MaintenancePlanService()

@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useMaintenance } from "../hooks/useMaintenance";
 import { MaintenanceScoreContent } from "../components/MaintenanceScoreContent";
 import { MaintenanceResearchPanel } from "../components/MaintenanceResearchPanel";
+import { Button } from "@/shared/components/ui/button";
+import { Link } from "react-router-dom";
 
 function VehicleSelector({ vehicles, value, onChange }: { vehicles: VehicleListItem[]; value: string; onChange: (value: string) => void }) {
     const selectedVehicle = vehicles.find((vehicle) => vehicle.id === value);
@@ -46,9 +48,12 @@ export default function MaintenancePage() {
 
     return (
         <div className="space-y-6 p-6">
-            <header className="space-y-1">
+            <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="space-y-1">
                 <h1 className="font-heading text-2xl font-semibold tracking-tight">Maintenance</h1>
                 <p className="text-sm text-muted-foreground">A local schedule-tracking score and separate, source-checked maintenance research.</p>
+              </div>
+              <Button render={<Link to={`/maintenance/planner${selectedVehicleId ? `?vehicleId=${encodeURIComponent(selectedVehicleId)}` : ""}`} />} className="bg-red-600 text-white hover:bg-red-500">Open maintenance planner</Button>
             </header>
 
             {vehiclesLoading && <Card><CardContent className="p-6 text-sm text-muted-foreground">Loading your vehicles…</CardContent></Card>}

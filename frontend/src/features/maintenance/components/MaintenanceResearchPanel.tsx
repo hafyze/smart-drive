@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, LoaderCircle } from "lucide-react";
 
 import { maintenanceResearchApi } from "../api/maintenanceResearchApi";
-import type { MaintenanceKnowledgeProfile, MaintenanceRecommendationType } from "../types/maintenanceResearch";
+import type { MaintenanceRecommendationType } from "../types/maintenanceResearch";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 import { getApiErrorMessage } from "@/shared/utils/api-error";
@@ -15,12 +15,21 @@ const RECOMMENDATION_LABELS: Record<MaintenanceRecommendationType, string> = {
 };
 
 export function MaintenanceResearchPanel({ vehicleId }: { vehicleId: string }) {
-    const [profile, setProfile] = useState<MaintenanceKnowledgeProfile | null>(null);
     const controller = useRef<AbortController | null>(null);
+    const queryClient = useQueryClient();
+    const cacheKey = ["maintenance-research", vehicleId] as const;
+    const cachedProfile = useQuery({
+        queryKey: cacheKey,
+        queryFn: ({ signal }) => maintenanceResearchApi.getCached(vehicleId, signal),
+        staleTime: 60_000,
+    });
     const research = useMutation({
         mutationFn: (signal: AbortSignal) => maintenanceResearchApi.research(vehicleId, signal),
-        onSuccess: setProfile,
+        onSuccess: (profile) => queryClient.setQueryData(cacheKey, profile),
     });
+
+    const profile = cachedProfile.data ?? null;
+    const pageError = research.error ?? cachedProfile.error;
 
     useEffect(() => () => controller.current?.abort(), []);
 
@@ -38,9 +47,9 @@ export function MaintenanceResearchPanel({ vehicleId }: { vehicleId: string }) {
                     <h2 className="font-heading text-lg font-semibold">Research-based maintenance guidance</h2>
                     <p className="text-sm text-muted-foreground">Uses your vehicle identity, summarized saved maintenance history, and cited technical sources.</p>
                 </div>
-                <Button type="button" onClick={handleResearch} disabled={research.isPending}>
-                    {research.isPending && <LoaderCircle className="size-4 animate-spin" />}
-                    {research.isPending ? "Researching…" : profile ? "Research again" : "Research maintenance"}
+                <Button type="button" onClick={handleResearch} disabled={research.isPending || cachedProfile.isLoading}>
+                    {(research.isPending || cachedProfile.isLoading) && <LoaderCircle className="size-4 animate-spin" />}
+                    {research.isPending ? "Researching…" : cachedProfile.isLoading ? "Checking saved research…" : profile ? "Research again" : "Research maintenance"}
                 </Button>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -48,13 +57,13 @@ export function MaintenanceResearchPanel({ vehicleId }: { vehicleId: string }) {
                     Research uses Gemini and web search providers. It sends make, model, year, transmission, current mileage, and summarized saved maintenance records. Receipts, account details, plate number, VIN, service notes, and costs are not sent. Recommendations are informational and do not diagnose the vehicle.
                 </p>
 
-                {research.error && (
+                {pageError && (
                     <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-                        {getApiErrorMessage(research.error)}
+                        {getApiErrorMessage(pageError)}
                     </div>
                 )}
 
-                {!profile && !research.isPending && !research.error && (
+                {!profile && !cachedProfile.isLoading && !research.isPending && !pageError && (
                     <p className="text-sm text-muted-foreground">Start a research run to see source-checked guidance for this vehicle.</p>
                 )}
 

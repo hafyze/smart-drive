@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime, timedelta, timezone
+import math
 
 from app.ai.research.factory import get_research_provider
 from app.ai.research.knowledge_normalizer import KnowledgeNormalizer
@@ -24,7 +25,9 @@ logger = logging.getLogger(__name__)
 
 class MaintenanceKnowledgeService:
     CACHE_TTL = timedelta(days=1)
-    CACHE_SCHEMA_VERSION = 2
+    CACHE_SCHEMA_VERSION = 3
+    RESEARCH_COOLDOWN = timedelta(seconds=60)
+    TOTAL_TIMEOUT_SECONDS = 110
     _inflight: dict[str, asyncio.Task[MaintenanceKnowledgeProfile]] = {}
     _inflight_lock = asyncio.Lock()
 
@@ -44,34 +47,35 @@ class MaintenanceKnowledgeService:
 
     async def get_maintenance_profile(
         self,
+        user_id: str,
+        vehicle_id: str,
         identity: VehicleIdentity,
         maintenance_summary: MaintenanceSummary,
         current_mileage: int,
     ) -> MaintenanceKnowledgeProfile:
-        cache_key = self._cache_key(identity, maintenance_summary, current_mileage)
-        now = datetime.now(timezone.utc)
-        cached = await self.repository.get_valid_profile(
-            cache_key,
-            now,
-            self.CACHE_SCHEMA_VERSION,
+        cache_key = self._cache_key(
+            user_id, vehicle_id, identity, maintenance_summary, current_mileage,
         )
-        if cached is not None:
-            try:
-                return MaintenanceKnowledgeProfile.model_validate(
-                    cached["profile"]
-                )
-            except (KeyError, ValueError):
-                logger.warning("Ignoring an invalid cached maintenance profile")
+        cached_profile = await self.get_cached_profile(
+            user_id, vehicle_id, identity, maintenance_summary, current_mileage,
+        )
+        if cached_profile is not None:
+            return cached_profile
 
         async with self._inflight_lock:
             task = self._inflight.get(cache_key)
             if task is None:
                 task = asyncio.create_task(
-                    self._research_and_cache(
-                        cache_key,
-                        identity,
-                        maintenance_summary,
-                        current_mileage,
+                    asyncio.wait_for(
+                        self._research_and_cache(
+                            user_id,
+                            vehicle_id,
+                            cache_key,
+                            identity,
+                            maintenance_summary,
+                            current_mileage,
+                        ),
+                        timeout=self.TOTAL_TIMEOUT_SECONDS,
                     )
                 )
                 self._inflight[cache_key] = task
@@ -81,13 +85,50 @@ class MaintenanceKnowledgeService:
 
         return await asyncio.shield(task)
 
+    async def get_cached_profile(
+        self,
+        user_id: str,
+        vehicle_id: str,
+        identity: VehicleIdentity,
+        maintenance_summary: MaintenanceSummary,
+        current_mileage: int,
+    ) -> MaintenanceKnowledgeProfile | None:
+        cache_key = self._cache_key(
+            user_id, vehicle_id, identity, maintenance_summary, current_mileage,
+        )
+        cached = await self.repository.get_valid_profile(
+            cache_key,
+            datetime.now(timezone.utc),
+            self.CACHE_SCHEMA_VERSION,
+        )
+        if cached is None:
+            return None
+        try:
+            return MaintenanceKnowledgeProfile.model_validate(cached["profile"])
+        except (KeyError, ValueError, TypeError):
+            logger.warning("Ignoring an invalid cached maintenance profile")
+            return None
+
     async def _research_and_cache(
         self,
+        user_id: str,
+        vehicle_id: str,
         cache_key: str,
         identity: VehicleIdentity,
         maintenance_summary: MaintenanceSummary,
         current_mileage: int,
     ) -> MaintenanceKnowledgeProfile:
+        now = datetime.now(timezone.utc)
+        cooldown_expiry = await self.repository.acquire_research_cooldown(
+            user_id,
+            vehicle_id,
+            now,
+            self.RESEARCH_COOLDOWN,
+        )
+        if cooldown_expiry is not None:
+            retry_after = max(1, math.ceil((cooldown_expiry - now).total_seconds()))
+            raise ResearchCooldownError(retry_after)
+
         search_provider = self.search_provider or get_maintenance_search_provider()
         research_provider = self.research_provider or get_research_provider()
         search_results = await search_provider.search(identity)
@@ -127,6 +168,8 @@ class MaintenanceKnowledgeService:
 
     @staticmethod
     def _cache_key(
+        user_id: str,
+        vehicle_id: str,
         identity: VehicleIdentity,
         summary: MaintenanceSummary,
         current_mileage: int,
@@ -152,9 +195,17 @@ class MaintenanceKnowledgeService:
         }
         value = {
             "schema_version": MaintenanceKnowledgeService.CACHE_SCHEMA_VERSION,
+            "user_id": user_id,
+            "vehicle_id": vehicle_id,
             "identity": create_vehicle_identity_key(identity),
             "current_mileage": current_mileage,
             "history": prompt_history,
         }
         payload = json.dumps(value, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+class ResearchCooldownError(Exception):
+    def __init__(self, retry_after_seconds: int):
+        self.retry_after_seconds = retry_after_seconds
+        super().__init__("AI maintenance research is temporarily rate limited.")

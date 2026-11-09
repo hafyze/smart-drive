@@ -14,6 +14,8 @@ class VehicleIdentityResolver:
         variant = vehicle.get("variant")
         year = vehicle.get("year")
         transmission = vehicle.get("transmission")
+        engine = vehicle.get("engine")
+        generation = vehicle.get("generation")
 
         if not isinstance(manufacturer, str):
             raise ValueError(
@@ -53,6 +55,8 @@ class VehicleIdentityResolver:
                 else None
             ),
             transmission=transmission_value,
+            engine=engine if isinstance(engine, str) and engine.strip() else None,
+            generation=generation if isinstance(generation, str) and generation.strip() else None,
             confidence=confidence,
         )
 

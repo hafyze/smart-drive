@@ -7,8 +7,8 @@ def create_vehicle_identity_key(identity: VehicleIdentity) -> str:
         identity.variant or "",
         str(identity.year or ""),
         identity.transmission or "",
+        identity.engine or "",
+        identity.generation or "",
     ]
 
-    return "|".join(value.strip().upper() 
-                        for value in values
-                    ) 
+    return "|".join(value.strip().upper() for value in values)

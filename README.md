@@ -74,9 +74,23 @@ The Maintenance page keeps two features separate:
 * **Maintenance tracking score:** a local, rule-based average of saved next-due schedules. It is not an LLM prediction or a mechanical diagnosis.
 * **Research-based guidance:** an optional backend action that searches with Tavily, asks Gemini to extract structured maintenance recommendations, and returns only guidance that passes source and vehicle checks. It uses make/model/year/transmission, current mileage, and a reduced summary of saved service records. It does not send account identifiers, receipts, plate numbers, VINs, service notes, or recorded costs.
 
-The research feature requires `AI_SEARCH_PROVIDER=tavily`, `TAVILY_API_KEY`, `AI_RESEARCH_PROVIDER=gemini`, `GEMINI_API_KEY`, and `GEMINI_RESEARCH_MODEL` in the backend environment. It is unavailable until those are configured. OpenAI research is not implemented. The rule-based score never calls external AI providers.
+The research feature requires `AI_SEARCH_PROVIDER=tavily`, `TAVILY_API_KEY`, `AI_RESEARCH_PROVIDER=gemini`, `GEMINI_API_KEY`, and `GEMINI_RESEARCH_MODEL` in the backend environment. It is unavailable until those are configured. A cache-only request can restore valid research after refresh without calling providers; provider-backed research is user-triggered and limited to one cache miss per user/vehicle per 60 seconds. OpenAI research is not implemented. The rule-based score never calls external AI providers.
 
 The research prompt receives the vehicle identity, current odometer, and recorded service visits summarized by maintenance type, date, mileage, and entered due values. It does not infer driving patterns or treat an unrecorded service as proof that the work was never done. Search results are evidence candidates; recommendations without an accepted source and vehicle match are omitted. Outputs are informational, may be empty, and are not a verified manufacturer schedule.
+
+### Vehicle-specific conversational assistant
+
+The Vehicle Insights page also provides a locally implemented, read-only SmartDrive AI Assistant. It can answer from saved vehicle/service records or, when Gemini routes a question to external research, search with Tavily and return claims linked to accepted sources. Answers separate saved records, external information, and AI interpretation. Record references are checked against the selected vehicle's current history, and external citations must match the supplied search results and pass the existing source-domain and vehicle checks. If no reliable source or record supports an answer, the assistant explains the limitation. Live provider, MongoDB persistence, Docker runtime, and authenticated browser workflows still require integration verification.
+
+Each conversation belongs to the signed-in user and one active vehicle. Multiple saved conversations can be switched, started, or permanently deleted. Conversations and messages expire after 90 days without successful activity. Questions are limited to 1,500 characters; at most eight recent exchanges and 60 recent maintenance items are supplied to the assistant, subject to a 32,000-character prompt cap. Provider usage is limited to 20 attempted assistant requests per user per UTC day and one request per vehicle every 10 seconds. The UI and API do not expose write operations to the assistant.
+
+The chat context includes vehicle make/model/year, engine, mileage, fuel/transmission, relevant maintenance descriptions and due values, and a still-valid cached research profile when available. It excludes VIN, registration, receipts, costs, service notes, account information, and other vehicles. Gemini/Tavily credentials listed above are required for chat; external research is selective, and record-only answers still require Gemini. The assistant is informational, not a mechanical diagnosis.
+
+### Research-based predictive preventive maintenance
+
+Vehicle Insights includes an optional predictive maintenance report. The backend deterministically selects up to three components. At most one slot is reserved for a saved overdue (or upcoming) schedule; other slots prioritize service history and general research, so several overdue schedules cannot crowd out all component research. Tavily searches those candidates; Gemini returns only candidate identifiers, source URLs, and exact excerpts. The backend checks excerpt text against the supplied result and checks URLs and declared vehicle make/model/year/engine/generation applicability. A text match is not proof of factual accuracy or semantic support, so the UI displays the excerpts and links but does not display free-form Gemini findings or recommendations. Backend rules assign `Schedule overdue`, `Monitor`, or `Insufficient data`. `Inspect` is reserved and is not assigned automatically from snippets. Gemini cannot set categories or numeric scores. An overdue schedule describes the saved due value, not a physical fault. Missing records remain unknown.
+
+Reports are scoped to user, vehicle identity (including known engine/generation), mileage, service history and model/schema revisions; they use the existing Mongo research cache and 24-hour expiry. A cache-only endpoint restores saved results; a user action is required to run or refresh external research. The displayed confidence describes source/applicability match only, not technical accuracy. Automated findings are unreviewed and informational, not statistically validated failure predictions, mechanical diagnoses, or a substitute for manufacturer service information or a qualified technician. No maintenance records or reminders are created automatically. See [API Specification](docs/04_API_SPECIFICATION.md) for endpoints and limits. Live provider, isolated MongoDB persistence, Docker 3.13, and authenticated browser verification remain separate manual checks.
 
 ---
 
@@ -300,7 +314,7 @@ The initial consumer model is intended to provide **up to two vehicles for free*
 
 # 💬 AI Vehicle Assistant
 
-The platform can eventually provide an AI conversational interface where users can ask questions about their own vehicles.
+The implemented Vehicle Insights assistant provides a read-only conversational interface where users can ask questions about their own vehicles. It uses saved vehicle context and, when routed to external research, source-checked Tavily results. Live integrations remain to be verified in a separate development environment.
 
 Examples:
 
@@ -581,7 +595,7 @@ Pricing will ultimately be validated through actual user conversion and retentio
 
 * [ ] Mobile-first refinement
 * [ ] PWA
-* [ ] AI vehicle assistant
+* [x] Read-only, vehicle-specific AI assistant (live integration verification pending)
 * [ ] Ownership cost tracking
 * [ ] Advanced vehicle health
 * [ ] AI vehicle reports
@@ -727,6 +741,18 @@ The same intelligence layer can eventually power:
 
 This project is currently under active development.
 
-The core vehicle, service-history, receipt, and OCR flows are implemented. The maintenance tracking score is local and explainable. Source-checked LLM maintenance research is connected to the Maintenance page but still needs verification with configured Gemini/Tavily credentials and production-like integration tests. Valuation and the broader intelligence platform remain future work.
+The core vehicle, service-history, receipt, and OCR flows are implemented. The maintenance tracking score is local and explainable. Source-checked LLM maintenance research and a read-only vehicle assistant are implemented locally, but live Gemini/Tavily, isolated MongoDB, Docker Python 3.13, and authenticated browser workflows remain unverified. Valuation and the broader intelligence platform remain future work.
+
+For Windows local setup, the backend loads `backend/.env.local` before `backend/.env`; process environment variables take precedence. `APP_ENV=production` must be set by the hosting environment, and production mode ignores dotenv files. See [Local Development](docs/11_LOCAL_DEVELOPMENT.md) and the [Integration Verification Runbook](docs/12_END_TO_END_VERIFICATION.md) for MongoDB, provider, browser, and Docker instructions.
 
 The ultimate goal is to transform the project from a vehicle maintenance application into a commercially viable **AI Vehicle Intelligence Platform**.
+
+## Preventive Maintenance Planner (Phase 4)
+
+The `/maintenance/planner` view brings saved service-history due targets, eligible cached Phase 3 evidence, and owner-created actions into versioned, user-managed plans. Generated plans are drafts. Schedule actions use the latest saved item per maintenance type and the exact due date/mileage the owner recorded; research-backed entries retain their validated source references and remain review suggestions. No new service interval, cost, or calendar projection is inferred. Mileage dates are projected only from an optional owner-entered monthly mileage estimate.
+
+Owners can approve selected or all proposals, add personal actions to draft or active plans, edit allowed fields, reschedule, start, skip, restore, cancel, and complete actions. Completion asks whether to create a service-history visit; that choice is explicit, and a unique action link prevents duplicate visits on retries. Existing saved due values are preserved unless the owner explicitly supplies updated values during completion. The local Maintenance Score logic is unchanged.
+
+Reminders are stored per action and evaluated when the planner is opened. In-app reminder dismissal and history are persisted. There is no background scheduler, email, push, or guaranteed proactive delivery yet; those require a production worker/notification service.
+
+See [API specification](docs/04_API_SPECIFICATION.md), [database design](docs/03_DATABASE_DESIGN.md), and [architecture](docs/02_SYSTEM_ARCHITECTURE.md) for endpoint and persistence details.

@@ -1,3 +1,4 @@
+import re
 from urllib.parse import urlparse
 
 from app.ai.schemas import (
@@ -121,54 +122,64 @@ class SourceValidator:
             return None
 
         vehicle_match = source.vehicle_match
+        if vehicle_match is None:
+            return None
 
-        if vehicle_match is not None:
-
-            if not self._same_text(
+        if not self._same_text(
                 vehicle_match.manufacturer,
                 identity.manufacturer,
-            ):
-                return None
+        ):
+            return None
 
-            if not self._same_text(
+        if not self._same_text(
                 vehicle_match.model,
                 identity.model,
-            ):
-                return None
+        ):
+            return None
 
-            if (
-                identity.year is not None
-                and not self._year_matches(
-                    year=identity.year,
-                    year_from=(
-                        vehicle_match.year_from
-                    ),
-                    year_to=(
-                        vehicle_match.year_to
-                    ),
-                )
-            ):
-                return None
+        if (
+            identity.year is not None
+            and not self._year_matches(
+                year=identity.year,
+                year_from=vehicle_match.year_from,
+                year_to=vehicle_match.year_to,
+            )
+        ):
+            return None
 
-            if (
-                vehicle_match.transmission
-                and identity.transmission
-                and not self._same_text(
-                    vehicle_match.transmission,
-                    identity.transmission,
-                )
-            ):
-                return None
+        if (
+            vehicle_match.transmission
+            and identity.transmission
+            and not self._same_text(
+                vehicle_match.transmission,
+                identity.transmission,
+            )
+        ):
+            return None
 
-            if (
-                vehicle_match.variant
-                and identity.variant
-                and not self._variant_matches(
-                    vehicle_match.variant,
-                    identity.variant,
-                )
-            ):
-                return None
+        if (
+            vehicle_match.variant
+            and identity.variant
+            and not self._variant_matches(
+                vehicle_match.variant,
+                identity.variant,
+            )
+        ):
+            return None
+
+        # Vehicle-specific engine/generation claims are accepted only when the
+        # stored vehicle context can verify them. Unknown values fail closed.
+        if vehicle_match.engine and (
+            not identity.engine
+            or not self._engine_matches(vehicle_match.engine, identity.engine)
+        ):
+            return None
+
+        if vehicle_match.generation and (
+            not identity.generation
+            or not self._same_text(vehicle_match.generation, identity.generation)
+        ):
+            return None
 
         # Backend overrides Gemini's classification.
         source.source_type = source_type
@@ -295,6 +306,19 @@ class SourceValidator:
         return True
 
     @staticmethod
+    def _engine_matches(source_engine: str, vehicle_engine: str) -> bool:
+        normalize = lambda value: re.sub(r"[^a-z0-9]", "", value.casefold())
+        source, vehicle = normalize(source_engine), normalize(vehicle_engine)
+        if not source or not vehicle:
+            return False
+        code_pattern = re.compile(r"\b\d+[A-Z]{1,3}-?[A-Z]{1,3}\b", re.I)
+        source_codes = {normalize(code) for code in code_pattern.findall(source_engine)}
+        vehicle_codes = {normalize(code) for code in code_pattern.findall(vehicle_engine)}
+        if source_codes:
+            return bool(vehicle_codes and source_codes.intersection(vehicle_codes))
+        return source == vehicle
+
+    @staticmethod
     def _has_valid_url(
         url: str,
     ) -> bool:
@@ -308,6 +332,8 @@ class SourceValidator:
                     "https",
                 }
                 and bool(parsed.netloc)
+                and parsed.username is None
+                and parsed.password is None
             )
 
         except ValueError:

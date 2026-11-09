@@ -12,6 +12,7 @@ from app.routes.maintenance import router as maintenance_router
 from app.routes.service_history import router as service_history_router
 from app.routes.receipt import router as receipt_router
 from app.routes.ai import router as ai_router
+from app.routes.maintenance_plans import router as maintenance_plans_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,5 +43,6 @@ app.include_router(auth_router)
 app.include_router(ai_router)
 app.include_router(vehicle_router)
 app.include_router(maintenance_router)
+app.include_router(maintenance_plans_router)
 app.include_router(service_history_router)
 app.include_router(receipt_router)

@@ -49,6 +49,15 @@ class TavilySearchProvider(MaintenanceSearchProvider):
 
     async def search(self, identity: VehicleIdentity) -> list[SearchResult]:
         queries = self._build_queries(identity)
+        return await self._search_queries(queries)
+
+    async def search_questions(self, identity: VehicleIdentity, queries: list[str]) -> list[SearchResult]:
+        bounded_queries = [query.strip()[:300] for query in queries if query.strip()][:3]
+        if not bounded_queries:
+            return []
+        return await self._search_queries(bounded_queries)
+
+    async def _search_queries(self, queries: list[str]) -> list[SearchResult]:
 
         tasks = [
             self._search_query(query)
@@ -63,18 +72,36 @@ class TavilySearchProvider(MaintenanceSearchProvider):
         results: list[SearchResult] = []
         failures = 0
 
-        for query, result in zip(queries, query_results):
+        for query_index, result in enumerate(query_results, start=1):
             if isinstance(result, BaseException):
                 failures += 1
                 logger.warning(
-                    "Tavily search failed for query '%s': %s ", query, result,
+                    "Tavily maintenance search %s failed (%s)",
+                    query_index,
+                    type(result).__name__,
                 )
                 continue
 
             results.extend(result)
         if failures == len(queries):
             raise RuntimeError("All maintenance searches failed.")
-        return self._deduplicate_results(results)
+        return self._bound_results(results)
+
+    @staticmethod
+    def _bound_results(results: list[SearchResult]) -> list[SearchResult]:
+        ranked = sorted(
+            TavilySearchProvider._deduplicate_results(results),
+            key=lambda result: result.score or 0,
+            reverse=True,
+        )[:10]
+        return [
+            result.model_copy(update={
+                "title": result.title[:300],
+                "content": result.content[:2_500] if result.content else None,
+            })
+            for result in ranked
+            if len(str(result.url)) <= 2_048
+        ]
 
     def _build_queries(self, identity: VehicleIdentity) -> list[str]:
         manufacturer = identity.manufacturer
@@ -159,6 +186,7 @@ class TavilySearchProvider(MaintenanceSearchProvider):
                     content=item.get("content"),
                     score=item.get("score"),
                     query=query,
+                    published_date=item.get("published_date"),
                 )
             )
 

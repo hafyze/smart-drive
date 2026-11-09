@@ -6,4 +6,5 @@ class SearchResult(BaseModel):
     content: str | None = None
     score: float | None = None
     query: str | None = None
-    
+    published_date: str | None = None
+

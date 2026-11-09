@@ -15,6 +15,7 @@ import RegisterPage from "@/features/auth/pages/RegisterPage";
 import MaintenancePage from "@/features/maintenance/pages/MaintenancePage";
 import VehicleDetailsPage from "@/features/garage/pages/VehicleDetailsPage";
 import ServiceHistoryPage from "@/features/maintenance/pages/ServiceHistoryPage";
+import MaintenancePlannerPage from "@/features/maintenance/pages/MaintenancePlannerPage";
 import NotFoundPage from "./NotFoundPage";
 
 import { ROUTES } from "./routes";
@@ -58,6 +59,11 @@ export default function AppRouter() {
                     <Route
                         path={ROUTES.AI}
                         element={<MaintenancePage />}
+                    />
+
+                    <Route
+                        path={ROUTES.MAINTENANCE_PLANNER}
+                        element={<MaintenancePlannerPage />}
                     />
 
                 </Route>

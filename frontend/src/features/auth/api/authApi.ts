@@ -7,8 +7,6 @@ import type {
     User,
 } from "../types/auth";
 
-console.log("VITE_API_URL =", import.meta.env.VITE_API_URL);
-
 export const authApi = {
     register: async (request: RegisterRequest): Promise<TokenResponse> => {
         const response = await api.post<TokenResponse>(

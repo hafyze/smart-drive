@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from enum import Enum
-from pydantic import BaseModel
+from uuid import UUID
+from pydantic import BaseModel, Field, model_validator
 
 class VehicleIdentityConfidence(str, Enum):
     HIGH =   "HIGH"
@@ -13,6 +14,8 @@ class VehicleIdentity(BaseModel):
     variant: str | None = None
     year: int | None = None
     transmission: str | None = None
+    engine: str | None = None
+    generation: str | None = None
 
     confidence: VehicleIdentityConfidence
 
@@ -24,6 +27,7 @@ class VehicleContext(BaseModel):
     year: int
 
     current_mileage: int
+    engine: str | None = None
 
     fuel_type: str
     transmission: str
@@ -137,12 +141,15 @@ class ResearchedVehicleMatch(BaseModel):
     year_to: int | None = None
 
     transmission: str | None = None
+    engine: str | None = None
+    generation: str | None = None
 
 
 class ResearchSource(BaseModel):
     name: str
     url: str
     title: str | None = None
+    publication_date: str | None = None
 
     source_type: MaintenanceSourceType
 
@@ -169,3 +176,96 @@ class MaintenanceResearchResult(BaseModel):
     guidance: list[ResearchedMaintenanceItem]
 
     sources: list[ResearchSource]
+
+
+class ConversationMaintenanceRecord(BaseModel):
+    reference: str = Field(max_length=100)
+    service_date: date
+    mileage_at_service: int | None = None
+    type: str = Field(max_length=100)
+    description: str | None = Field(default=None, max_length=500)
+    next_due_date: date | None = None
+    next_due_mileage: int | None = None
+
+
+class VehicleConversationContext(BaseModel):
+    vehicle: VehicleContext
+    maintenance_summary: MaintenanceSummary
+    maintenance_records: list[ConversationMaintenanceRecord] = []
+    history_truncated: bool = False
+
+
+class ChatResearchClaim(BaseModel):
+    claim: str = Field(min_length=1, max_length=1_200)
+    source_urls: list[str] = Field(default_factory=list, max_length=8)
+
+
+class ChatAnswerDraft(BaseModel):
+    record_references: list[str] = Field(default_factory=list, max_length=100)
+    researched_claims: list[ChatResearchClaim] = Field(default_factory=list, max_length=8)
+    sources: list[ResearchSource] = Field(default_factory=list, max_length=10)
+    interpretation: str | None = Field(default=None, max_length=2_000)
+    limitations: list[str] = Field(default_factory=list, max_length=5)
+
+
+class ChatRouteDraft(BaseModel):
+    needs_research: bool
+    search_queries: list[str] = Field(default_factory=list, max_length=3)
+    direct_answer: ChatAnswerDraft | None = None
+
+    @model_validator(mode="after")
+    def validate_route(self):
+        if self.needs_research and not self.search_queries:
+            raise ValueError("Research routes require at least one query.")
+        if not self.needs_research and self.direct_answer is None:
+            raise ValueError("Record-only routes require a direct answer.")
+        return self
+
+
+class ConversationSource(BaseModel):
+    url: str
+    title: str
+    name: str
+    source_type: MaintenanceSourceType
+
+
+class ConversationAnswer(BaseModel):
+    recorded_information: list[ConversationMaintenanceRecord] = Field(default_factory=list, max_length=100)
+    researched_claims: list[ChatResearchClaim] = Field(default_factory=list, max_length=8)
+    sources: list[ConversationSource] = Field(default_factory=list, max_length=10)
+    interpretation: str | None = Field(default=None, max_length=2_000)
+    limitations: list[str] = Field(default_factory=list, max_length=5)
+
+
+class ConversationTurn(BaseModel):
+    id: str
+    client_message_id: str
+    question: str
+    answer: ConversationAnswer | None = None
+    status: str = "complete"
+    created_at: datetime
+
+
+class ConversationSummary(BaseModel):
+    id: str
+    vehicle_id: str
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    expires_at: datetime
+    turn_count: int
+
+
+class ConversationDetail(ConversationSummary):
+    turns: list[ConversationTurn] = []
+
+
+class ConversationMessageRequest(BaseModel):
+    client_message_id: UUID
+    content: str = Field(min_length=1, max_length=1_500)
+
+    @model_validator(mode="after")
+    def validate_content(self):
+        if not self.content.strip():
+            raise ValueError("Message cannot be blank.")
+        return self

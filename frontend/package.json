@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "test": "node --experimental-strip-types --test tests/submitServiceVisit.test.ts tests/garageData.test.ts tests/dashboardData.test.ts",
+    "test": "node --experimental-strip-types --test tests/submitServiceVisit.test.ts tests/garageData.test.ts tests/dashboardData.test.ts tests/maintenanceScore.test.ts tests/maintenanceResearchApi.test.ts tests/maintenanceConversation.test.ts tests/predictiveMaintenanceApi.test.ts tests/maintenancePlannerData.test.ts",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"

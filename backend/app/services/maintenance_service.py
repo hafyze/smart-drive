@@ -30,6 +30,7 @@ class MaintenanceService:
         self,
         user_id: str,
         service_visit: ServiceVisitCreate,
+        maintenance_action_id: str | None = None,
     ) -> ServiceVisitResponse:
 
         # --------------------------------------------------------
@@ -117,6 +118,8 @@ class MaintenanceService:
             "created_at": now,
             "updated_at": now,
         }
+        if maintenance_action_id is not None:
+            service_visit_document["maintenance_action_id"] = maintenance_action_id
 
         # Convert service date to MongoDB datetime
         service_visit_document = self._serialize_update_data(
