@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from urllib.parse import urlparse
 
 from google import genai
@@ -18,6 +19,8 @@ from app.ai.schemas import (
 from app.ai.search.schemas import SearchResult
 from app.ai.predictive_schemas import PredictiveCandidate, PredictiveResearchDraft
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class GeminiResearchProvider(
@@ -214,6 +217,12 @@ The interpretation may explain the recorded facts and cited claims, but must dis
                     raise RuntimeError("Gemini returned an empty response.")
                 return response_schema.model_validate_json(response.text)
             except errors.ServerError as exc:
+                logger.warning(
+                    "Gemini request failed with status %s (attempt %s/%s)",
+                    exc.code,
+                    attempt,
+                    max_attempts,
+                )
                 if exc.code != 503 or attempt == max_attempts:
                     raise
                 await asyncio.sleep(2**attempt)
@@ -304,6 +313,12 @@ The interpretation may explain the recorded facts and cited claims, but must dis
                     timeout=timeout_seconds,
                 )
             except errors.ServerError as exc:
+                logger.warning(
+                    "Gemini request failed with status %s (attempt %s/%s)",
+                    exc.code,
+                    attempt,
+                    max_attempts,
+                )
                 if (exc.code != 503 or attempt == max_attempts):
                     raise
                 delay_seconds = 2**attempt

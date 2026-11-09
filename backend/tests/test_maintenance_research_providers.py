@@ -235,16 +235,19 @@ class MaintenanceResearchProviderTests(unittest.TestCase):
         async def fake_sleep(delay):
             sleep_delays.append(delay)
 
-        with patch("app.ai.research.gemini_provider.settings.gemini_research_model", "mock-model"), patch(
-            "app.ai.research.gemini_provider.errors.ServerError", MockServerError,
-        ), patch("app.ai.research.gemini_provider.asyncio.wait_for", side_effect=fake_wait_for), patch(
-            "app.ai.research.gemini_provider.asyncio.sleep", side_effect=fake_sleep,
-        ):
-            response = run_immediate_coroutine(provider._generate_with_retry("prompt", timeout_seconds=35))
+        with self.assertLogs("app.ai.research.gemini_provider", level="WARNING") as captured:
+            with patch("app.ai.research.gemini_provider.settings.gemini_research_model", "mock-model"), patch(
+                "app.ai.research.gemini_provider.errors.ServerError", MockServerError,
+            ), patch("app.ai.research.gemini_provider.asyncio.wait_for", side_effect=fake_wait_for), patch(
+                "app.ai.research.gemini_provider.asyncio.sleep", side_effect=fake_sleep,
+            ):
+                response = run_immediate_coroutine(provider._generate_with_retry("private prompt", timeout_seconds=35))
 
         self.assertEqual(response.text, "mock structured response")
         self.assertEqual(attempts, [35, 35])
         self.assertEqual(sleep_delays, [2])
+        self.assertIn("status 503", captured.output[0])
+        self.assertNotIn("private prompt", captured.output[0])
 
 
 if __name__ == "__main__":
