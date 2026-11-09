@@ -37,6 +37,7 @@ import type { MaintenanceType } from "../types/maintenance";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { receiptApi } from "@/features/receipts/api/receiptApi";
 import { receiptUploadSchema } from "@/features/receipts/validation/receiptSchema";
+import { saveServiceVisitWithReceipt } from "../utils/submitServiceVisit";
 import { toast } from "@/shared/components/ui/toastManager";
 
 
@@ -188,54 +189,38 @@ export function AddMaintenanceDialog({
             }
         }
         try {
-            let serviceVisitId = savedVisitId;
-            if (!serviceVisitId) {
-                const created = await createServiceVisit.mutateAsync({
-                vehicle_id: vehicleId,
-
-                service_date: values.service_date,
-                mileage_at_service: values.mileage_at_service,
-
-                workshop: values.workshop || null,
-                notes: values.notes || null,
-
-                items: values.items.map((item) => ({
-                    type: item.type,
-
-                    description: item.description || null,
-
-                    next_due_date:
-                        item.next_due_date || null,
-
-                    next_due_mileage:
-                        item.next_due_mileage ?? null,
-
-                    cost:
-                        item.cost ?? null,
-
-                    notes:
-                        item.notes || null,
-                })),
-                });
-                serviceVisitId = created.id;
-                setSavedVisitId(serviceVisitId);
-            }
-
-            if (receiptFile && serviceVisitId) {
-                try {
-                    await receiptApi.create({
+            const result = await saveServiceVisitWithReceipt({
+                existingVisitId: savedVisitId,
+                createVisit: () => createServiceVisit.mutateAsync({
+                    vehicle_id: vehicleId,
+                    service_date: values.service_date,
+                    mileage_at_service: values.mileage_at_service,
+                    workshop: values.workshop || null,
+                    notes: values.notes || null,
+                    items: values.items.map((item) => ({
+                        type: item.type,
+                        description: item.description || null,
+                        next_due_date: item.next_due_date || null,
+                        next_due_mileage: item.next_due_mileage ?? null,
+                        cost: item.cost ?? null,
+                        notes: item.notes || null,
+                    })),
+                }),
+                onVisitCreated: setSavedVisitId,
+                attachReceipt: receiptFile ? (serviceVisitId) => receiptApi.create({
                         vehicleId,
                         serviceVisitId,
                         file: receiptFile,
-                    });
-                } catch {
-                    toast.add({
-                        title: "Service saved; receipt needs retry",
-                        description: "The service visit was saved. Submit again to retry attaching its receipt.",
-                        type: "error",
-                    });
-                    return;
-                }
+                    }) : undefined,
+            });
+
+            if (result.receiptAttachmentFailed) {
+                toast.add({
+                    title: "Service saved; receipt needs retry",
+                    description: "The service visit was saved. Submit again to retry attaching its receipt.",
+                    type: "error",
+                });
+                return;
             }
 
             resetVisitDraft();

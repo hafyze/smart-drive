@@ -15,9 +15,9 @@ This is the working completion roadmap. “Complete” means locally implemented
 
 | Feature | Status | What exists / what remains |
 | --- | --- | --- |
-| Registration and sign-in | NEEDS VERIFICATION | Password hashing, stored/revocable sessions, auth endpoints and frontend flows exist. Add account/session workflow tests and verify against the deployed database. |
+| Registration and sign-in | NEEDS VERIFICATION | Password hashing, stored/revocable sessions, auth endpoints and frontend flows exist. Session revocation/expiry unit coverage is in place; verify against the deployed database. |
 | Vehicle garage and details | NEEDS VERIFICATION | Owner-scoped vehicle CRUD, soft delete, searchable local make/model catalog, responsive forms, private photo storage, and a five-tab vehicle dashboard with real specs, score, mileage chart, service history, research, and receipts exist. Cross-user CRUD, replacement cleanup, and deployed GridFS behavior need broader verification; visual viewport review remains. |
-| Service visits and history | NEEDS VERIFICATION | Visit/item CRUD, due schedules, status calculations, desktop table/mobile cards, detail actions, receipt links, and add-service actions exist. Add persistent CRUD and edit/delete consistency tests; verify the browser workflow. |
+| Service visits and history | NEEDS VERIFICATION | Visit/item CRUD, due schedules, status calculations, desktop table/mobile cards, detail actions, receipt links, and add-service actions exist. Partial-edit preservation, owner-scoped deletion, and history ordering/totals have unit coverage; verify the browser workflow and persistent CRUD. |
 | Receipts and OCR | NEEDS VERIFICATION | Private GridFS upload, authenticated access, local image/PDF OCR, editable draft, and post-save receipt attach/retry flow exist. Parser and storage unit tests pass; real OCR quality, GridFS persistence, and full save/retry journey need integration verification. |
 | Dashboard | NEEDS VERIFICATION | Connected vehicle and maintenance summaries with bounded photos exist. Verify the authenticated journey and empty/error states on desktop/mobile. |
 | Rule-based maintenance score | COMPLETE (local logic) | Six areas, saved due schedules, 100/70/30 thresholds, exclusion of missing data, minimum two eligible areas, and non-diagnostic explanation are implemented. It does not use an LLM. UI/browser behavior lacks automated tests. |
@@ -46,7 +46,8 @@ This is the working completion roadmap. “Complete” means locally implemented
 ### Phase 2 — Core journey and data integrity: IN PROGRESS
 
 - [x] Add tests for maintenance due status and creation, receipt file validation/OCR uncertainty/ownership/visit attachment/metadata rollback, vehicle ownership/soft-delete, and photo access/replacement.
-- [ ] Add tests for login/logout and session revocation/expiry lookup, service visit edit/delete/history consistency, GridFS integration, and the frontend receipt retry journey.
+- [x] Add tests for session revocation/expiry lookup, service visit edit/delete/history consistency, and the frontend receipt retry journey.
+- [ ] Add GridFS integration tests.
 - [ ] Verify real Tesseract/PDF scan behavior and GridFS round trips against a test database.
 - [ ] Verify responsive browser workflows and record a production-like smoke procedure.
 
@@ -86,13 +87,14 @@ This is the working completion roadmap. “Complete” means locally implemented
 
 Latest local verification (2026-11-09):
 
-- Backend: `python -B -m unittest discover -s tests -v` — **31 tests passed**.
+- Backend: `python -B -m unittest discover -s tests -v` — **37 tests passed**.
+- Frontend: `npm test` — **2 receipt-save/retry tests passed**.
 - Frontend: `npm run lint` — **0 errors, 5 React Hook Form compatibility warnings**.
 - Frontend: `npm run typecheck` — passed.
 - Frontend: `npm run build` — passed. Vite reports its existing config-loader `__dirname` advisory and a 1.19 MB JavaScript chunk advisory.
 - Vehicle details redesign: code/build verified; no authenticated browser viewport test was run, so visual desktop/tablet/mobile acceptance remains unverified.
 - Not verified: live Atlas/GridFS, Tesseract/PDFium end-to-end, browser-driven workflows, or Tavily/Gemini calls. The current local Windows asyncio harness is unsuitable for reliable task-creating async integration tests; use a normal CI/runtime test environment for those checks.
-- No commits or pushes have been made.
+- Previous completed work was pushed in commit `1f646e6`; the current test and receipt-retry changes are not yet committed or pushed.
 
 ## Execution log
 

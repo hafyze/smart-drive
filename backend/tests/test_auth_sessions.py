@@ -1,6 +1,9 @@
 import unittest
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
+from fastapi import HTTPException
+
+from app.repositories.session_repository import SessionRepository
 from app.services.auth_service import AuthService
 
 
@@ -46,6 +49,63 @@ class AuthSessionTests(unittest.TestCase):
 
     def test_remembered_session_expires_in_seven_days(self):
         self.assert_session(True, timedelta(days=7))
+
+    def test_logout_revokes_using_only_the_token_hash(self):
+        service = self.make_service()
+
+        class SessionRepository:
+            async def revoke_by_token_hash(inner_self, token_hash):
+                inner_self.revoked_hash = token_hash
+
+        service.session_repository = SessionRepository()
+        token = "unpredictable-session-token"
+
+        result = run_immediate_coroutine(service.logout(token))
+
+        self.assertEqual(result, {"success": True})
+        self.assertEqual(
+            service.session_repository.revoked_hash,
+            service._hash_token(token),
+        )
+        self.assertNotEqual(service.session_repository.revoked_hash, token)
+
+    def test_authentication_rejects_missing_or_expired_session_before_user_lookup(self):
+        service = self.make_service()
+
+        class SessionRepository:
+            async def find_active_by_token_hash(self, _token_hash):
+                return None
+
+        class UserRepository:
+            async def get_by_id(self, _user_id):
+                raise AssertionError("User lookup must not happen for an invalid session")
+
+        service.session_repository = SessionRepository()
+        service.repository = UserRepository()
+
+        with self.assertRaises(HTTPException) as caught:
+            run_immediate_coroutine(
+                service.get_current_user_by_token("expired-or-revoked")
+            )
+
+        self.assertEqual(caught.exception.status_code, 401)
+
+    def test_session_lookup_requires_unrevoked_and_unexpired_hash(self):
+        repository = SessionRepository.__new__(SessionRepository)
+
+        async def find_one(query):
+            repository.query = query
+            return None
+
+        repository.find_one = find_one
+        before = datetime.now(timezone.utc)
+        run_immediate_coroutine(repository.find_active_by_token_hash("hashed-token"))
+        after = datetime.now(timezone.utc)
+
+        self.assertEqual(repository.query["token_hash"], "hashed-token")
+        self.assertIsNone(repository.query["revoked_at"])
+        self.assertLessEqual(repository.query["expires_at"]["$gt"], after)
+        self.assertGreaterEqual(repository.query["expires_at"]["$gt"], before)
 
 
 if __name__ == "__main__":
