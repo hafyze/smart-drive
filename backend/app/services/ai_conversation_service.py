@@ -70,7 +70,11 @@ class AIConversationService:
         owned_vehicle_id = await self.context_builder.verify_vehicle_access(vehicle_id, user_id)
         now = datetime.now(timezone.utc)
         conversations = await self.repository.list_conversations(user_id, owned_vehicle_id)
-        return [self._conversation_summary(item) for item in conversations if item.get("expires_at", now) > now]
+        return [
+            self._conversation_summary(item)
+            for item in conversations
+            if self._as_utc_datetime(item.get("expires_at", now)) > now
+        ]
 
     async def get(self, vehicle_id: str, conversation_id: str, user_id: str) -> ConversationDetail:
         owned_vehicle_id = await self.context_builder.verify_vehicle_access(vehicle_id, user_id)
@@ -397,13 +401,22 @@ class AIConversationService:
             limitations.append("Only the most recent 60 recorded maintenance items were considered.")
         return ConversationAnswer(limitations=limitations)
 
+    @staticmethod
+    def _as_utc_datetime(value: datetime) -> datetime:
+        # PyMongo returns BSON datetimes as naive UTC unless tz_aware is enabled.
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+
     async def _get_owned_conversation(self, conversation_id: str, user_id: str, vehicle_id: str) -> dict:
         try:
             object_id = ObjectId(conversation_id)
         except Exception as exc:
             raise HTTPException(status_code=404, detail="Conversation not found.") from exc
         conversation = await self.repository.get_conversation(object_id, user_id, vehicle_id)
-        if conversation is None or conversation.get("expires_at", datetime.min.replace(tzinfo=timezone.utc)) <= datetime.now(timezone.utc):
+        if conversation is None or self._as_utc_datetime(
+            conversation.get("expires_at", datetime.min.replace(tzinfo=timezone.utc))
+        ) <= datetime.now(timezone.utc):
             raise HTTPException(status_code=404, detail="Conversation not found.")
         return conversation
 
@@ -413,9 +426,9 @@ class AIConversationService:
             id=str(document["_id"]),
             vehicle_id=str(document["vehicle_id"]),
             title=document.get("title", "New conversation"),
-            created_at=document["created_at"],
-            updated_at=document["updated_at"],
-            expires_at=document["expires_at"],
+            created_at=AIConversationService._as_utc_datetime(document["created_at"]),
+            updated_at=AIConversationService._as_utc_datetime(document["updated_at"]),
+            expires_at=AIConversationService._as_utc_datetime(document["expires_at"]),
             turn_count=document.get("turn_count", 0),
         )
 
@@ -427,5 +440,5 @@ class AIConversationService:
             question=document["question"],
             answer=document.get("answer"),
             status=document.get("status", "complete"),
-            created_at=document["created_at"],
+            created_at=AIConversationService._as_utc_datetime(document["created_at"]),
         )

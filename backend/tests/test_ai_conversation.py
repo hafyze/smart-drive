@@ -62,6 +62,11 @@ class FakeRepository:
             return self.conversation
         return None
 
+    async def list_conversations(self, user_id, vehicle_id):
+        if user_id == self.conversation["user_id"] and vehicle_id == self.conversation["vehicle_id"]:
+            return [self.conversation]
+        return []
+
     async def reserve_turn(self, conversation, client_message_id, question, turn_id, now, expires_at):
         if self.existing_turn is not None:
             return self.existing_turn, False
@@ -157,6 +162,23 @@ class AIConversationTests(unittest.TestCase):
     @staticmethod
     def _inline_wait_for(awaitable, timeout):
         return run_immediate_coroutine(awaitable)
+
+    def test_naive_mongo_conversation_dates_are_normalized_as_utc(self):
+        repository = FakeRepository()
+        for field in ("created_at", "updated_at", "expires_at"):
+            repository.conversation[field] = repository.conversation[field].replace(tzinfo=None)
+        service, _ = self._service(provider=None, repo=repository)
+
+        conversation = run_immediate_coroutine(service._get_owned_conversation(
+            str(repository.conversation["_id"]), "owner-1", "vehicle-1",
+        ))
+        summary = service._conversation_summary(conversation)
+        listed = run_immediate_coroutine(service.list_for_vehicle("vehicle-1", "owner-1"))
+
+        self.assertEqual(summary.created_at.tzinfo, timezone.utc)
+        self.assertEqual(summary.updated_at.tzinfo, timezone.utc)
+        self.assertEqual(summary.expires_at.tzinfo, timezone.utc)
+        self.assertEqual(len(listed), 1)
 
     def test_record_only_questions_do_not_search_and_filter_unknown_record_references(self):
         class Provider:
