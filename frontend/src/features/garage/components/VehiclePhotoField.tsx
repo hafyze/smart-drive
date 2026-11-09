@@ -24,17 +24,15 @@ export function VehiclePhotoField({
     removed = false,
 }: VehiclePhotoFieldProps) {
     const [error, setError] = useState<string>();
-    const [preview, setPreview] = useState<string>();
+    const [previewState, setPreviewState] = useState<{ file: File; url: string } | null>(null);
 
     useEffect(() => {
-        if (!file) {
-            setPreview(undefined);
-            return;
-        }
-        const url = URL.createObjectURL(file);
-        setPreview(url);
-        return () => URL.revokeObjectURL(url);
-    }, [file]);
+        return () => {
+            if (previewState) URL.revokeObjectURL(previewState.url);
+        };
+    }, [previewState]);
+
+    const preview = file && previewState?.file === file ? previewState.url : undefined;
 
     const chooseFile = (selected?: File) => {
         setError(undefined);
@@ -47,6 +45,7 @@ export function VehiclePhotoField({
             setError("Photo must be 10 MB or smaller.");
             return;
         }
+        setPreviewState({ file: selected, url: URL.createObjectURL(selected) });
         onFileChange(selected);
     };
 
@@ -71,6 +70,7 @@ export function VehiclePhotoField({
                         <Button type="button" variant="ghost" size="sm" onClick={() => {
                             if (file) {
                                 onFileChange(null);
+                                setPreviewState(null);
                             } else if (removed) {
                                 onRestoreCurrent?.();
                             } else {

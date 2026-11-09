@@ -20,6 +20,20 @@ Set `VITE_API_URL=http://127.0.0.1:8000` in `frontend/.env.local`. For example, 
 Set-Content frontend\.env.local 'VITE_API_URL=http://127.0.0.1:8000'
 ```
 
+## Optional maintenance research
+
+The local maintenance-tracking score works without external credentials. To enable research guidance, set these values in `backend/.env` (or the production backend environment):
+
+```dotenv
+AI_SEARCH_PROVIDER=tavily
+TAVILY_API_KEY=your-tavily-key
+AI_RESEARCH_PROVIDER=gemini
+GEMINI_API_KEY=your-gemini-key
+GEMINI_RESEARCH_MODEL=your-enabled-gemini-model
+```
+
+The research action sends vehicle make/model/year/transmission, current mileage, and summarized maintenance types/dates/mileages/due values to Gemini. Tavily receives vehicle-identity search queries. Neither provider receives account identifiers, receipts, notes, costs, license plates, or VINs. Keep provider keys in the backend environment, never in `frontend/.env.local`.
+
 ## Start the backend
 
 Open a PowerShell terminal at the repository root:

@@ -3,7 +3,7 @@ import { Loader2, Plus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
-import { toast } from "@/shared/components/ui/toast"
+import { toast } from "@/shared/components/ui/toastManager"
 
 import { Button } from "@/shared/components/ui/button";
 import {

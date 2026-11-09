@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { getApiErrorMessage } from "@/shared/utils/api-error";
 import { Loader2, Plus, ScanLine, Trash2, Wrench } from "lucide-react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,11 +37,13 @@ import type { MaintenanceType } from "../types/maintenance";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { receiptApi } from "@/features/receipts/api/receiptApi";
 import { receiptUploadSchema } from "@/features/receipts/validation/receiptSchema";
-import { toast } from "@/shared/components/ui/toast";
+import { toast } from "@/shared/components/ui/toastManager";
 
 
 interface AddMaintenanceDialogProps {
     vehicleId: string;
+    triggerClassName?: string;
+    triggerLabel?: string;
 }
 
 
@@ -123,6 +126,8 @@ const defaultItem = {
 
 export function AddMaintenanceDialog({
     vehicleId,
+    triggerClassName,
+    triggerLabel = "Add Service",
 }: AddMaintenanceDialogProps) {
     const [open, setOpen] = useState(false);
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -264,8 +269,8 @@ export function AddMaintenanceDialog({
                     notes: "",
                 }))
                 : [{ ...defaultItem, type: "OTHER" as MaintenanceType }]);
-        } catch (error: any) {
-            setScanError(error.response?.data?.detail ?? "Could not scan this receipt. Try a clearer image or PDF.");
+        } catch (error: unknown) {
+            setScanError(getApiErrorMessage(error));
         } finally {
             setScanning(false);
         }
@@ -285,9 +290,9 @@ export function AddMaintenanceDialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger
                 render={
-                    <Button>
+                    <Button className={triggerClassName}>
                         <Plus className="size-4" />
-                        Add Service
+                        {triggerLabel}
                     </Button>
                 }
             />

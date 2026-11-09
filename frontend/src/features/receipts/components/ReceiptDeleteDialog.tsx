@@ -1,4 +1,5 @@
 import { Trash2 } from "lucide-react";
+import { getApiErrorMessage } from "@/shared/utils/api-error";
 
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -15,7 +16,7 @@ import {
 
 import { useDeleteReceipt } from "../hooks/useReceipts";
 import type { Receipt } from "../types/receipt";
-import { toast } from "@/shared/components/ui/toast";
+import { toast } from "@/shared/components/ui/toastManager";
 
 interface ReceiptDeleteDialogProps {
     receipt: Receipt;
@@ -36,11 +37,8 @@ export function ReceiptDeleteDialog({
                 type: "success",
                 description:"Receipt deleted"
             })
-        } catch (error: any) {
-            console.error(
-                "DELETE RECEIPT ERROR:",
-                error.response?.data ?? error,
-            );
+        } catch (error: unknown) {
+            toast.add({ type: "error", description: getApiErrorMessage(error) });
         }
     };
 

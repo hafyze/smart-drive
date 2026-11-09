@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Paperclip, Upload } from "lucide-react";
+import { getApiErrorMessage } from "@/shared/utils/api-error";
+import { toast } from "@/shared/components/ui/toastManager";
 
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -19,7 +21,7 @@ import { useCreateReceipt } from "../hooks/useReceipts";
 
 interface ReceiptUploadDialogProps {
     vehicleId: string;
-    serviceVisitId: string;
+    serviceVisitId?: string;
 }
 
 export function ReceiptUploadDialog({
@@ -48,11 +50,8 @@ export function ReceiptUploadDialog({
             setFile(null);
             setNotes("");
             setOpen(false);
-        } catch (error: any) {
-            console.error(
-                "RECEIPT UPLOAD ERROR:",
-                error.response?.data ?? error,
-            );
+        } catch (error: unknown) {
+            toast.add({ type: "error", description: getApiErrorMessage(error) });
         }
     };
 
@@ -77,18 +76,20 @@ export function ReceiptUploadDialog({
                     </DialogTitle>
 
                     <DialogDescription>
-                        Attach a receipt or invoice to this service visit.
+                        {serviceVisitId
+                            ? "Attach a receipt or invoice to this service visit."
+                            : "Upload a service receipt or invoice for this vehicle. You can link it to a service visit later."}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor={`receipt-${serviceVisitId}`}>
+                        <Label htmlFor={`receipt-${serviceVisitId ?? vehicleId}`}>
                             Receipt file
                         </Label>
 
                         <Input
-                            id={`receipt-${serviceVisitId}`}
+                            id={`receipt-${serviceVisitId ?? vehicleId}`}
                             type="file"
                             accept=".pdf,.jpg,.jpeg,.png,.webp"
                             onChange={(event) => {

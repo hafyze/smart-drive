@@ -36,6 +36,9 @@ class MaintenanceItemSummary(BaseModel):
     last_done_date: date | None = None
     last_done_mileage: int | None = None
 
+    next_due_date: date | None = None
+    next_due_mileage: int | None = None
+
     mileage_since_last_done: int | None = None
 
     times_recorded: int = 0

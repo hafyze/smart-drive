@@ -1,6 +1,8 @@
 from pathlib import Path
+from io import BytesIO
 
 from fastapi import HTTPException, UploadFile, status
+from PIL import Image, UnidentifiedImageError
 
 from app.services.gridfs_storage_service import GridFSStorageService
 
@@ -32,6 +34,11 @@ class ReceiptStorageService:
             raise HTTPException(status_code=400, detail="Receipt file must not exceed 10 MB.")
         if not content:
             raise HTTPException(status_code=400, detail="Receipt file is empty.")
+        if not self._matches_content_type(content, content_type):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The file contents do not match the selected receipt type.",
+            )
 
         file_id = await self.gridfs.save(
             filename=file.filename or f"receipt{extension}",
@@ -45,6 +52,28 @@ class ReceiptStorageService:
             "content_type": content_type,
             "file_size": len(content),
         }
+
+    @classmethod
+    def _matches_content_type(cls, content: bytes, content_type: str) -> bool:
+        if content_type == "application/pdf":
+            return content.startswith(b"%PDF-")
+
+        expected_format = {
+            "image/jpeg": "JPEG",
+            "image/png": "PNG",
+            "image/webp": "WEBP",
+        }.get(content_type)
+        if expected_format is None:
+            return False
+
+        try:
+            image = Image.open(BytesIO(content))
+            if image.width * image.height > 40_000_000:
+                return False
+            image.verify()
+            return image.format == expected_format
+        except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+            return False
 
     async def read_file(self, file_id: str) -> bytes:
         if not self._is_gridfs_id(file_id):

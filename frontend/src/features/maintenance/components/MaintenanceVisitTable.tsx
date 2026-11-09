@@ -8,6 +8,7 @@ import { DeleteMaintenanceDialog } from "./DeleteMaintenanceDialog";
 import { EditMaintenanceDialog } from "./EditMaintenanceDialog";
 import { useMaintenance } from "../hooks/useMaintenance";
 import type { ServiceVisit } from "../types/maintenance";
+import { ServiceVisitReceipts } from "@/features/receipts/components/ServiceVisitReceipts";
 
 interface MaintenanceVisitTableProps {
     vehicleId: string;
@@ -41,7 +42,7 @@ function getVisitTotal(visit: ServiceVisit): number | null {
     return costs.length ? costs.reduce((total, cost) => total + cost, 0) : null;
 }
 
-function VisitDetails({ visit }: { visit: ServiceVisit }) {
+function VisitDetails({ visit, vehicleId }: { visit: ServiceVisit; vehicleId: string }) {
     return (
         <div className="space-y-4 rounded-lg bg-muted/30 p-4">
             <div className="space-y-3">
@@ -76,6 +77,8 @@ function VisitDetails({ visit }: { visit: ServiceVisit }) {
                     <p className="mt-1 whitespace-pre-wrap text-sm">{visit.notes}</p>
                 </div>
             )}
+
+            <ServiceVisitReceipts vehicleId={vehicleId} serviceVisitId={visit.id} />
 
             <div className="flex justify-end gap-2 border-t pt-3">
                 <EditMaintenanceDialog serviceVisit={visit} />
@@ -153,7 +156,7 @@ export function MaintenanceVisitTable({ vehicleId }: MaintenanceVisitTableProps)
                                     {expanded && (
                                         <tr key={`${visit.id}-details`}>
                                             <td colSpan={7} className="px-3 py-4">
-                                                <VisitDetails visit={visit} />
+                                                <VisitDetails visit={visit} vehicleId={vehicleId} />
                                             </td>
                                         </tr>
                                     )}
@@ -185,7 +188,7 @@ export function MaintenanceVisitTable({ vehicleId }: MaintenanceVisitTableProps)
                                 <div className="flex justify-end">
                                     <DetailsButton expanded={expanded} onClick={() => toggleVisit(visit.id)} />
                                 </div>
-                                {expanded && <VisitDetails visit={visit} />}
+                                {expanded && <VisitDetails visit={visit} vehicleId={vehicleId} />}
                             </CardContent>
                         </Card>
                     );

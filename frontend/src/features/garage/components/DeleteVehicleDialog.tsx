@@ -10,7 +10,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
-import { toast } from "@/shared/components/ui/toast";
+import { toast } from "@/shared/components/ui/toastManager";
 
 import { useDeleteVehicle } from "../hooks/useVehicles";
 interface DeleteVehicleDialogProps {

@@ -35,4 +35,5 @@ Backend
 
 AI
 
-- OpenAI / Gemini
+- Gemini structured maintenance research with Tavily web search (optional, credential-gated)
+- Rule-based local maintenance schedule tracking

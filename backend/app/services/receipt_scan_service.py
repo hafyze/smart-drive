@@ -127,7 +127,15 @@ class ReceiptScanService:
     @staticmethod
     def _parse_workshop(lines: list[str]) -> str | None:
         for line in lines[:8]:
-            if len(line) >= 3 and re.search(r"[a-zA-Z]", line) and not re.search(r"receipt|invoice|tax|date|tel|phone|no\.?\s*[:#]", line, re.I):
+            if (
+                len(line) >= 3
+                and re.search(r"[a-zA-Z]", line)
+                and not re.search(
+                    r"receipt|invoice|tax|date|tel|phone|no\.?\s*[:#]|thank\s+you|come\s+again|welcome|cashier\s+copy|customer\s+copy",
+                    line,
+                    re.I,
+                )
+            ):
                 return line[:200]
         return None
 

@@ -26,23 +26,24 @@ An individual vehicle owner who wants to organize vehicle details and maintenanc
 - Per-vehicle service history.
 - Receipt upload, preview, and deletion with private access controls.
 - Dashboard summary of vehicles, recorded maintenance, and user-entered schedules.
+- Optional source-checked maintenance research. This feature requires configured Gemini and Tavily credentials; core vehicle and maintenance workflows remain usable without it.
 - Responsive layout for desktop and mobile browser sizes.
 - Clear loading, empty, validation, and recoverable error states for the core journey.
 - Production hosting for the frontend, API, and database with HTTPS, backups, and basic error monitoring.
 
 ## Out of scope for this release
 
-- AI-generated maintenance advice, vehicle health scores, or failure predictions.
-- Mileage-specific issue recommendations and a structured vehicle knowledge base.
+- Physical vehicle health claims or failure predictions. The maintenance score is only a schedule-tracking estimate; research recommendations remain source-cited and advisory.
+- Mileage-specific issue predictions beyond source-backed maintenance guidance.
 - AI chat, valuation estimates, OBD-II, and machine-learning models.
 - Workshops directory, fleet management, enterprise APIs, subscriptions, and paid plans.
 - Native mobile apps. A responsive website is sufficient for the first release.
 
-These remain future product directions in the README. They should be added only after the core data is reliable and the recommendation quality can be explained and checked.
+Valuation, OBD-II, AI chat, and failure prediction remain future product directions. LLM research guidance is optional and must remain clearly separate from the rule-based schedule score.
 
 ## Navigation and unfinished screens
 
-For the public MVP, show only working destinations for Dashboard, Garage, and the vehicle's Maintenance/Service History. Keep login and registration available before sign-in. Hide or remove navigation to AI, Workshops, Analytics, Fleet, Profile, and Settings until each has a complete, useful flow. Do not present placeholder content as a finished feature.
+For the public MVP, show working destinations for Dashboard, Garage, Maintenance/Service History, and optional source-checked Maintenance Research. Keep login and registration available before sign-in. Hide Workshops, Analytics, Fleet, Profile, and Settings until each has a complete, useful flow. Do not present placeholder content as a finished feature. Maintenance Research is separate from the local tracking score and unavailable until Gemini and Tavily backend credentials are configured.
 
 ## MVP release checks
 
@@ -58,4 +59,4 @@ The MVP is ready for a limited public release when:
 
 ## Next implementation milestone
 
-Audit the existing Dashboard, Garage, Maintenance, and Service History flow against the core journey above. Record each gap as a small issue before adding new product features.
+Use the current [MVP gap audit](10_MVP_GAP_AUDIT.md) and [project completion roadmap](../PROJECT_COMPLETION.md) to track release verification and remaining core journey coverage.

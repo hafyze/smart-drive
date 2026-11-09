@@ -2,11 +2,6 @@ import {
   LayoutDashboard,
   Car,
   BrainCircuit,
-  Wrench,
-  ChartColumn,
-  // Truck,
-  Settings,
-  User,
 } from "lucide-react";
 
 export interface NavigationItem {
@@ -27,31 +22,10 @@ export const OWNER_NAVIGATION: NavigationItem[] = [
     icon: Car,
   },
   {
-    title: "AI Maintenance",
+    title: "Maintenance",
     href: "/ai",
     icon: BrainCircuit,
   },
-  {
-    title: "Workshops",
-    href: "/workshops",
-    icon: Wrench,
-  },
-  {
-    title: "Analytics",
-    href: "/analytics",
-    icon: ChartColumn,
-  },
 ];
 
-export const OWNER_BOTTOM_NAVIGATION: NavigationItem[] = [
-  {
-    title: "Profile",
-    href: "/profile",
-    icon: User,
-  },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: Settings,
-  },
-];
+export const OWNER_BOTTOM_NAVIGATION: NavigationItem[] = [];

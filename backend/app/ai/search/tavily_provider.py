@@ -61,15 +61,19 @@ class TavilySearchProvider(MaintenanceSearchProvider):
         )
 
         results: list[SearchResult] = []
+        failures = 0
 
         for query, result in zip(queries, query_results):
             if isinstance(result, BaseException):
+                failures += 1
                 logger.warning(
                     "Tavily search failed for query '%s': %s ", query, result,
                 )
                 continue
 
             results.extend(result)
+        if failures == len(queries):
+            raise RuntimeError("All maintenance searches failed.")
         return self._deduplicate_results(results)
 
     def _build_queries(self, identity: VehicleIdentity) -> list[str]:

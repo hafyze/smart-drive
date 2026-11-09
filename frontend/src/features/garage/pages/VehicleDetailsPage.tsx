@@ -1,294 +1,142 @@
-import { ArrowLeft, Gauge } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
-import { History } from "lucide-react";
+import { useRef } from "react";
+import { Activity, BrainCircuit, FileText, Gauge, Wrench } from "lucide-react";
+import { useParams, useSearchParams } from "react-router-dom";
 
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
-import { Badge } from "@/shared/components/ui/badge";
-
-import { EditVehicleDialog } from "../components/EditVehicleDialog";
-import { VehiclePhoto } from "../components/VehiclePhoto";
-
+import { Card, CardContent } from "@/shared/components/ui/card";
+import { useMaintenance } from "@/features/maintenance/hooks/useMaintenance";
+import { useServiceHistory } from "@/features/maintenance/hooks/useServiceHistory";
 import { useVehicle } from "../hooks/useVehicles";
+import { VehicleHero } from "../components/vehicle-details/VehicleHero";
+import { VehicleOverviewTab } from "../components/vehicle-details/VehicleOverviewTab";
+import { VehicleServiceHistoryTab } from "../components/vehicle-details/VehicleServiceHistoryTab";
+import { VehicleMaintenanceTab } from "../components/vehicle-details/VehicleMaintenanceTab";
+import { VehicleInsightsTab } from "../components/vehicle-details/VehicleInsightsTab";
+import { VehicleDocumentsTab } from "../components/vehicle-details/VehicleDocumentsTab";
 
-import { MaintenanceVisitTable } from "@/features/maintenance/components/MaintenanceVisitTable";
-import { AddMaintenanceDialog } from "@/features/maintenance/components/AddMaintenanceDialog";
+const DETAIL_TABS = [
+    { id: "overview", label: "Overview", icon: Activity },
+    { id: "history", label: "Service History", icon: Wrench },
+    { id: "maintenance", label: "Maintenance", icon: Gauge },
+    { id: "insights", label: "Insights", icon: BrainCircuit },
+    { id: "documents", label: "Documents", icon: FileText },
+] as const;
 
-interface VehicleDetailProps {
-    label: string;
-    value: string;
-    icon?: React.ReactNode
-}
+type DetailTab = (typeof DETAIL_TABS)[number]["id"];
 
-function VehicleDetail({
-    label, value, icon
-}: VehicleDetailProps) {
+function VehicleDetailsLoading() {
     return (
-        <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">
-                {label}
-            </p>
-
-            <div className="flex items-center gap-2 font-medium">
-                {icon && (
-                    <span className="text-muted-foreground">
-                        {icon}
-                    </span>
-                )}
-
-                <span>{value}</span>
-            </div>
+        <div className="dark min-h-[calc(100vh-4rem)] space-y-5 bg-[#0b0d0f] p-4 text-white sm:p-6">
+            <div className="h-[350px] animate-pulse rounded-2xl bg-muted sm:h-[390px]" />
+            <div className="grid gap-3 sm:grid-cols-5">{DETAIL_TABS.map((tab) => <div key={tab.id} className="h-12 animate-pulse rounded-xl bg-muted" />)}</div>
+            <Card><CardContent className="h-64 animate-pulse p-6" /></Card>
         </div>
-    )
-}
-
-function formatEnum(value: string) {
-    return value
-        .toLowerCase()
-        .replaceAll("_", " ")
-        .replace(/\b\w/g, (character) => character.toUpperCase());
-}
-function formatDate(value: string) {
-    return new Intl.DateTimeFormat("en-MY", {
-        dateStyle: "medium",
-    }).format(new Date(value))
+    );
 }
 
 export default function VehicleDetailsPage() {
-    const navigate = useNavigate();
-    const { vehicleId } = useParams();
+    const { vehicleId = "" } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+    const requestedTab = searchParams.get("tab");
+    const activeTab: DetailTab = DETAIL_TABS.some((tab) => tab.id === requestedTab)
+        ? requestedTab as DetailTab
+        : "overview";
 
-    const {
-        data: vehicle,
-        isLoading,
-        isError,
-        error,
-    } = useVehicle(vehicleId ?? "");
+    const { data: vehicle, isLoading: vehicleLoading, isError: vehicleError, error } = useVehicle(vehicleId);
+    const { data: visits, isLoading: visitsLoading, isError: visitsError, refetch: refetchVisits } = useMaintenance(vehicle?.id);
+    const { data: serviceHistory, isLoading: historyLoading, isError: historyError, refetch: refetchHistory } = useServiceHistory(vehicle?.id ?? "");
 
-    if (isLoading) {
+    const selectTab = (tab: DetailTab) => {
+        setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            if (tab === "overview") next.delete("tab");
+            else next.set("tab", tab);
+            return next;
+        });
+    };
+
+    if (vehicleLoading) return <VehicleDetailsLoading />;
+
+    if (vehicleError || !vehicle) {
         return (
-            <div className="space-y-6">
-                <div className="h-8 w-32 animate-pulse rounded-bg-mute">
-
-                    <Card>
-                        <CardContent className="space-y-4">
-                            <div className="h-6 w-48 animate-pulse rounded bg-muted" ></div>
-                            <div className="h-6 w-64 animate-pulse rounded bg-muted"></div>
-                            <div className="h-6 w-40 animate-pulse rounded bg-muted"></div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-        );
-    }
-
-    if (isError || !vehicle) {
-        return (
-            <div className="space-y-6">
-                <Button variant="ghost" onClick={() => navigate("/garage")}>
-                    <ArrowLeft />
-                    Back to Garage
-                </Button>
-
-                <Card>
-                    <CardContent className="flex min-h-48 items-center justify-center p-6">
-                        <div className="text-center">
-                            <h2 className="font-heading text-lg font-semibold">
-                                Unable to load vehicle
-                            </h2>
-
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                {error instanceof Error
-                                    ? error.message
-                                    : "The vehicle could not be found"
-                                }
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+            <div className="dark min-h-[calc(100vh-4rem)] space-y-5 bg-[#0b0d0f] p-4 text-white sm:p-6">
+                <Card><CardContent className="flex min-h-48 flex-col items-center justify-center gap-2 p-6 text-center">
+                    <h1 className="font-heading text-xl font-semibold">Unable to load vehicle</h1>
+                    <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : "The vehicle could not be found."}</p>
+                </CardContent></Card>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 p-4">
-            {/* Header */}
-            <div className="flex items-center gap-3">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => navigate("/garage")}
-                    aria-label="Back to garage"
-                >
-                    <ArrowLeft />
-                </Button>
+        <div className="dark min-h-[calc(100vh-4rem)] min-w-0 space-y-5 bg-[#0b0d0f] p-3 text-white sm:space-y-6 sm:p-6">
+            <VehicleHero vehicle={vehicle} />
 
-                <div>
-                    <h1 className="text-sm text-muted-foreground">
-                        {vehicle.nickname}
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        {vehicle.manufacturer} {vehicle.model} {" "}
-                        {vehicle.variant}
-                    </p>
+            <nav aria-label="Vehicle details" className="-mx-3 overflow-x-auto border-b border-border/70 px-3 sm:mx-0 sm:px-0">
+                <div role="tablist" aria-label="Vehicle details sections" className="flex min-w-max gap-1">
+                    {DETAIL_TABS.map((tab, index) => {
+                        const Icon = tab.icon;
+                        const selected = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                ref={(element) => { tabRefs.current[index] = element; }}
+                                id={`vehicle-tab-${tab.id}`}
+                                type="button"
+                                role="tab"
+                                aria-selected={selected}
+                                aria-controls={`vehicle-panel-${tab.id}`}
+                                tabIndex={selected ? 0 : -1}
+                                onClick={() => selectTab(tab.id)}
+                                onKeyDown={(event) => {
+                                    const keys = ["ArrowRight", "ArrowLeft", "Home", "End"];
+                                    if (!keys.includes(event.key)) return;
+                                    event.preventDefault();
+                                    const nextIndex = event.key === "Home" ? 0
+                                        : event.key === "End" ? DETAIL_TABS.length - 1
+                                            : (index + (event.key === "ArrowRight" ? 1 : -1) + DETAIL_TABS.length) % DETAIL_TABS.length;
+                                    const nextTab = DETAIL_TABS[nextIndex];
+                                    if (nextTab) {
+                                        tabRefs.current[nextIndex]?.focus();
+                                        selectTab(nextTab.id);
+                                    }
+                                }}
+                                className={`flex min-h-12 items-center gap-2 border-b-2 px-3 text-sm font-medium transition-colors sm:px-5 ${selected ? "border-red-500 text-red-500" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                            >
+                                <Icon className="size-4" aria-hidden="true" />{tab.label}
+                            </button>
+                        );
+                    })}
                 </div>
-            </div>
+            </nav>
 
-            <div className="flex flex-wrap gap-2">
-                <EditVehicleDialog vehicle={vehicle} />
-
-                <Button
-                    variant="outline"
-                    onClick={() => navigate(`/garage/${vehicleId}/service-history`)}
-                >
-                    <History className="size-4" />
-                    Service History
-                </Button>
-            </div>
-            {/* Vehicle Information */}
-            <Card className="overflow-hidden">
-                <CardHeader className="flex flex-row items-start justify-between">
-                    <div>
-                        <h2 className="font-heading text-lg font-semibold">
-                            Vehicle Information
-                        </h2>
-
-                        <p className="text-sm text-muted-foreground">
-                            Basic information about your vehicle
-                        </p>
-                    </div>
-
-                    <Badge>
-                        {vehicle.status}
-                    </Badge>
-                </CardHeader>
-
-                <CardContent className="space-y-8">
-                    {/* Main Vehicle Summary */}
-                    <div className="grid gap-6 md:grid-cols-[240px_1fr]">
-                        {/* Vehicle Image */}
-                        <div className="aspect-4/3 overflow-hidden rounded-xl bg-muted">
-                            <VehiclePhoto
-                                photoUrl={vehicle.photo_url}
-                                alt={`${vehicle.manufacturer} ${vehicle.model}`}
-                                className="h-full w-full object-cover"
-                            />
+            <section
+                id={`vehicle-panel-${activeTab}`}
+                role="tabpanel"
+                aria-labelledby={`vehicle-tab-${activeTab}`}
+                tabIndex={0}
+                className="min-w-0 outline-none"
+            >
+                {activeTab === "overview" && (visitsLoading || historyLoading) && (
+                    <Card><CardContent className="flex min-h-48 items-center justify-center p-6 text-sm text-muted-foreground">Loading vehicle records…</CardContent></Card>
+                )}
+                {activeTab === "overview" && (visitsError || historyError) && (
+                    <Card><CardContent className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
+                        <p className="text-sm text-destructive">Unable to load service data for the overview.</p>
+                        <div className="flex gap-2">
+                            {visitsError && <button type="button" className="text-sm text-red-500 underline" onClick={() => void refetchVisits()}>Retry maintenance</button>}
+                            {historyError && <button type="button" className="text-sm text-red-500 underline" onClick={() => void refetchHistory()}>Retry history</button>}
                         </div>
-
-                        {/* Vehicle Summary */}
-                        <div className="flex flex-col justify-center space-y-4">
-                            <div>
-                                <p className="text-lg font-semibold">
-                                    {vehicle.nickname}
-                                </p>
-
-                                <p className="text-muted-foreground">
-                                    {vehicle.manufacturer} {vehicle.model}{" "}
-                                    {vehicle.variant}
-                                </p>
-                            </div>
-
-                            <div className="space-y-2">
-                                <p className="text-sm text-muted-foreground">
-                                    Year
-                                </p>
-
-                                <p className="font-medium">
-                                    {vehicle.year}
-                                </p>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <Gauge className="size-4 text-muted-foreground" />
-
-                                <span className="font-medium">
-                                    {vehicle.current_mileage.toLocaleString()} km
-                                </span>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                                <span>{formatEnum(vehicle.fuel_type)}</span>
-                                <span>•</span>
-                                <span>{formatEnum(vehicle.transmission)}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Divider */}
-                    <div className="border-t" />
-
-                    {/* Additional Vehicle Information */}
-                    <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-                        <VehicleDetail
-                            label="Engine"
-                            value={vehicle.engine ?? "Not provided"}
-                        />
-
-                        <VehicleDetail
-                            label="Plate Number"
-                            value={vehicle.plate_number ?? "Not provided"}
-                        />
-
-                        <VehicleDetail
-                            label="Color"
-                            value={vehicle.color ?? "Not provided"}
-                        />
-
-                        <VehicleDetail
-                            label="VIN"
-                            value={vehicle.vin ?? "Not provided"}
-                        />
-
-                        <VehicleDetail
-                            label="Purchase Date"
-                            value={
-                                vehicle.purchase_date
-                                    ? formatDate(vehicle.purchase_date)
-                                    : "Not provided"
-                            }
-                        />
-                    </div>
-
-                    {/* Notes */}
-                    {vehicle.notes && (
-                        <>
-                            <div className="border-t" />
-
-                            <div className="space-y-2">
-                                <p className="text-sm font-medium">
-                                    Notes
-                                </p>
-
-                                <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                                    {vehicle.notes}
-                                </p>
-                            </div>
-                        </>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* Maintenance */}
-            <Card>
-                <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 className="font-heading text-lg font-semibold">
-                            Maintenance
-                        </h2>
-
-                        <p className="text-sm text-muted-foreground">
-                            Maintenance history and service records
-                        </p>
-                    </div>
-                    <AddMaintenanceDialog vehicleId={vehicle.id} />
-                </CardHeader>
-
-                <CardContent>
-                    <MaintenanceVisitTable vehicleId={vehicle.id} />
-                </CardContent>
-            </Card>
+                    </CardContent></Card>
+                )}
+                {activeTab === "overview" && !visitsLoading && !historyLoading && !visitsError && !historyError && (
+                    <VehicleOverviewTab vehicle={vehicle} visits={visits ?? []} serviceHistory={serviceHistory ?? []} onSelectTab={selectTab} />
+                )}
+                {activeTab === "history" && <VehicleServiceHistoryTab vehicleId={vehicle.id} />}
+                {activeTab === "maintenance" && <VehicleMaintenanceTab vehicle={vehicle} visits={visits ?? []} isLoading={visitsLoading} isError={visitsError} />}
+                {activeTab === "insights" && <VehicleInsightsTab vehicleId={vehicle.id} />}
+                {activeTab === "documents" && <VehicleDocumentsTab vehicleId={vehicle.id} />}
+            </section>
         </div>
-    )
-
+    );
 }
-

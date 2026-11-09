@@ -67,32 +67,22 @@ Use a machine learning model to estimate the vehicle's market value based on rel
 
 The AI Maintenance Assistant analyzes a user's vehicle information and service history to provide personalized maintenance guidance.
 
-It can consider:
+### Current implementation
 
-* Vehicle make and model
-* Model year
-* Engine and transmission
-* Current mileage
-* Previous service dates
-* Mileage at previous services
-* Parts replaced
-* Repair history
-* Maintenance intervals
-* Driving patterns
-* Known mileage-related issues
-* Technical maintenance knowledge
+The Maintenance page keeps two features separate:
 
-Example:
+* **Maintenance tracking score:** a local, rule-based average of saved next-due schedules. It is not an LLM prediction or a mechanical diagnosis.
+* **Research-based guidance:** an optional backend action that searches with Tavily, asks Gemini to extract structured maintenance recommendations, and returns only guidance that passes source and vehicle checks. It uses make/model/year/transmission, current mileage, and a reduced summary of saved service records. It does not send account identifiers, receipts, plate numbers, VINs, service notes, or recorded costs.
 
-> Your previous engine oil changes occurred approximately every 7,000–8,000 km. Based on your current mileage and recorded service history, your next oil service is approaching.
+The research feature requires `AI_SEARCH_PROVIDER=tavily`, `TAVILY_API_KEY`, `AI_RESEARCH_PROVIDER=gemini`, `GEMINI_API_KEY`, and `GEMINI_RESEARCH_MODEL` in the backend environment. It is unavailable until those are configured. OpenAI research is not implemented. The rule-based score never calls external AI providers.
 
-The goal is to provide recommendations based on the **actual vehicle history**, rather than simply displaying a generic service reminder.
+The research prompt receives the vehicle identity, current odometer, and recorded service visits summarized by maintenance type, date, mileage, and entered due values. It does not infer driving patterns or treat an unrecorded service as proof that the work was never done. Search results are evidence candidates; recommendations without an accepted source and vehicle match are omitted. Outputs are informational, may be empty, and are not a verified manufacturer schedule.
 
 ---
 
 ## 📊 Vehicle Health Dashboard
 
-The platform generates an estimated **Vehicle Health / Maintenance Health Index**.
+The Maintenance page generates a schedule-tracking estimate from the latest saved due schedules.
 
 Example:
 
@@ -109,11 +99,7 @@ Battery         82
 Tyres           95
 ```
 
-The score is intended to represent the vehicle's **maintenance condition and quality of available maintenance evidence**.
-
-It is not intended to claim that a physical component is literally a specific percentage healthy or replace a professional mechanical inspection.
-
-The system can also provide an explanation for each score.
+The score describes only whether saved maintenance schedules are up to date, due soon, or overdue. It does not assess physical vehicle condition or replace a mechanical inspection. Areas without usable due data are excluded, and an overall score is withheld until enough areas have data. Each area includes its rule-based explanation.
 
 ---
 
@@ -741,6 +727,6 @@ The same intelligence layer can eventually power:
 
 This project is currently under active development.
 
-The core vehicle management and machine learning components are being developed first, while the main AI maintenance intelligence layer remains an ongoing area of development.
+The core vehicle, service-history, receipt, and OCR flows are implemented. The maintenance tracking score is local and explainable. Source-checked LLM maintenance research is connected to the Maintenance page but still needs verification with configured Gemini/Tavily credentials and production-like integration tests. Valuation and the broader intelligence platform remain future work.
 
 The ultimate goal is to transform the project from a vehicle maintenance application into a commercially viable **AI Vehicle Intelligence Platform**.

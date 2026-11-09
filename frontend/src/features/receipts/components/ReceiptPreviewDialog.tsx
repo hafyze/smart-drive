@@ -19,9 +19,11 @@ interface ReceiptPreviewDialogProps {
 
 export function ReceiptPreviewDialog({ receipt, }: ReceiptPreviewDialogProps) {
     const [open, setOpen] = useState(false);
-    const [fileUrl, setFileUrl] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [hasError, setHasError] = useState(false);
+    const [preview, setPreview] = useState<
+        | { receiptId: string; status: "loading" | "error" }
+        | { receiptId: string; status: "loaded"; fileUrl: string }
+        | null
+    >(null);
     const isImage = receipt.content_type.startsWith("image/");
 
     const isPdf = receipt.content_type === "application/pdf";
@@ -33,22 +35,15 @@ export function ReceiptPreviewDialog({ receipt, }: ReceiptPreviewDialogProps) {
 
         const controller = new AbortController();
         let objectUrl: string | null = null;
-        setIsLoading(true);
-        setHasError(false);
 
         receiptApi.getFile(receipt.id, controller.signal)
             .then((file) => {
                 objectUrl = URL.createObjectURL(file);
-                setFileUrl(objectUrl);
+                setPreview({ receiptId: receipt.id, status: "loaded", fileUrl: objectUrl });
             })
             .catch(() => {
                 if (!controller.signal.aborted) {
-                    setHasError(true);
-                }
-            })
-            .finally(() => {
-                if (!controller.signal.aborted) {
-                    setIsLoading(false);
+                    setPreview({ receiptId: receipt.id, status: "error" });
                 }
             });
 
@@ -57,12 +52,21 @@ export function ReceiptPreviewDialog({ receipt, }: ReceiptPreviewDialogProps) {
             if (objectUrl) {
                 URL.revokeObjectURL(objectUrl);
             }
-            setFileUrl(null);
         };
     }, [open, receipt.id]);
 
+    const currentPreview = preview?.receiptId === receipt.id ? preview : null;
+    const isLoading = open && (!currentPreview || currentPreview.status === "loading");
+    const hasError = currentPreview?.status === "error";
+    const fileUrl = currentPreview?.status === "loaded" ? currentPreview.fileUrl : null;
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        setOpen(nextOpen);
+        setPreview(nextOpen ? { receiptId: receipt.id, status: "loading" } : null);
+    };
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger
                 render={
                     <Button variant="ghost" size="sm">

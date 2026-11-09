@@ -24,7 +24,7 @@ import {
     SelectValue,
 } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { toast } from "@/shared/components/ui/toast";
+import { toast } from "@/shared/components/ui/toastManager";
 
 import { useUpdateServiceVisit } from "../hooks/useMaintenance";
 import {

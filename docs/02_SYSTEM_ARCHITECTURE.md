@@ -34,20 +34,26 @@ MongoDB
 
 ## AI
 
-FastAPI
+Authenticated FastAPI research action
 
 ↓
 
-Prompt Builder
+Owner-scoped vehicle identity + reduced saved-maintenance summary
 
 ↓
 
-LLM
+Tavily evidence search → Gemini structured extraction
 
 ↓
 
-Structured JSON
+Exact search-URL allow-list + source-domain and vehicle-match validation
 
 ↓
 
-Frontend
+Identity/history-keyed MongoDB cache with 24-hour expiry
+
+↓
+
+Frontend source-cited guidance, separate from the local maintenance score
+
+The local score uses saved schedules only and does not call external AI providers.

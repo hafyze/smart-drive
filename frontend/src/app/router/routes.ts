@@ -11,13 +11,4 @@ export const ROUTES = {
 
   AI: "/ai",
 
-  WORKSHOPS: "/workshops",
-
-  ANALYTICS: "/analytics",
-
-  FLEET: "/fleet",
-
-  PROFILE: "/profile",
-
-  SETTINGS: "/settings",
 } as const;

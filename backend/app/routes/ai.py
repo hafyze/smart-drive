@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.ai.context_builder import (
     VehicleContextBuilder,
@@ -6,19 +8,15 @@ from app.ai.context_builder import (
 from app.ai.schemas import (
     VehicleMaintenanceContext,
 )
-from app.ai.research.factory import (
-    get_research_provider,
+from app.ai.maintenance_knowledge_service import (
+    MaintenanceKnowledgeService,
 )
-from app.ai.search.factory import (
-    get_maintenance_search_provider,
-)
-from app.ai.research.source_validator import (
-    SourceValidator,
-)
-from app.routes.auth import (
+from app.ai.schemas import MaintenanceKnowledgeProfile
+from app.dependencies.auth_dependencies import (
     get_current_user,
 )
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/ai",
@@ -43,7 +41,10 @@ async def get_vehicle_ai_context(
         user_id=current_user["id"],
     )
 
-@router.get("/research/{vehicle_id}")
+@router.post(
+    "/research/{vehicle_id}",
+    response_model=MaintenanceKnowledgeProfile,
+)
 async def research_vehicle(
     vehicle_id: str,
     current_user: dict = Depends(
@@ -59,32 +60,28 @@ async def research_vehicle(
 
     identity = context.vehicle.identity
 
-    search_provider = (
-        get_maintenance_search_provider()
-    )
-
-    research_provider = (
-        get_research_provider()
-    )
-
-    search_results = await search_provider.search(
-        identity
-    )
-
-    research = await research_provider.research(
-        identity=identity,
-        search_results=search_results,
-    )
-
-    validator = SourceValidator()
-    validated_research = validator.validate(
-        identity=identity,
-        research_result=research,
-    )
-
-    return {
-        "identity": identity,
-        "search_results": search_results,
-        "raw_research": research,
-        "validated_research": validated_research,
-    }
+    try:
+        service = MaintenanceKnowledgeService()
+        return await service.get_maintenance_profile(
+            identity=identity,
+            maintenance_summary=context.maintenance,
+            current_mileage=context.vehicle.current_mileage,
+        )
+    except TimeoutError as exc:
+        logger.warning("AI maintenance research timed out for vehicle %s", vehicle_id)
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Maintenance research timed out. Please try again.",
+        ) from exc
+    except (RuntimeError, ValueError) as exc:
+        logger.warning("AI maintenance research is unavailable: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Maintenance research is not configured or is currently unavailable.",
+        ) from exc
+    except Exception as exc:
+        logger.exception("AI maintenance research failed for vehicle %s", vehicle_id)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Maintenance research could not be completed. Please try again.",
+        ) from exc

@@ -64,21 +64,12 @@ export const maintenanceApi = {
         serviceVisitId: string,
         serviceVisit: UpdateServiceVisitPayload,
     ): Promise<ServiceVisit> => {
-        try {
-            const response = await api.put<ServiceVisit>(
-                `/maintenance/${serviceVisitId}`,
-                serviceVisit,
-            );
+        const response = await api.put<ServiceVisit>(
+            `/maintenance/${serviceVisitId}`,
+            serviceVisit,
+        );
 
-            return response.data;
-        } catch (error: any) {
-            console.error(
-                "UPDATE SERVICE VISIT ERROR:",
-                error.response?.data ?? error,
-            );
-
-            throw error;
-        }
+        return response.data;
     },
 
     // ============================================================

@@ -1,9 +1,12 @@
+import logging
+
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 from app.core.config import settings
 
 client: AsyncIOMotorClient | None = None
 database: AsyncIOMotorDatabase | None = None
+logger = logging.getLogger(__name__)
 
 async def connect_mongodb():
     global client, database
@@ -13,6 +16,14 @@ async def connect_mongodb():
 
     #Verify conn
     await client.admin.command("ping")
+    try:
+        await database["maintenance_knowledge"].create_index(
+            "expires_at",
+            expireAfterSeconds=0,
+            name="maintenance_knowledge_expiry",
+        )
+    except Exception:
+        logger.exception("Unable to create maintenance knowledge cache expiry index")
     print("Connected to MongoDB...")
 
 async def disconnect_mongodb():

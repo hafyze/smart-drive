@@ -12,7 +12,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/shared/components/ui/dialog";
-import { toast } from "@/shared/components/ui/toast";
+import { toast } from "@/shared/components/ui/toastManager";
 
 import { useDeleteMaintenance } from "../hooks/useMaintenance";
 import type { ServiceVisit } from "../types/maintenance";

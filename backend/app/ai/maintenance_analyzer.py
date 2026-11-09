@@ -50,6 +50,8 @@ class MaintenanceAnalyzer:
                         "type": maintenance_type,
                         "last_done_date": None,
                         "last_done_mileage": None,
+                        "next_due_date": None,
+                        "next_due_mileage": None,
                         "times_recorded": 0,
                         "total_recorded_cost": 0.0,
                     }
@@ -69,16 +71,22 @@ class MaintenanceAnalyzer:
                 ] = self._to_date(
                     service_date
                 )
-
-                last_done_mileage = summary[
-                    "last_done_mileage"
-                ]
-
-                summary["mileage_since_last_done"] = (
-                    current_mileage - last_done_mileage
-                    if last_done_mileage is not None
-                    else None
+                summary["last_done_mileage"] = mileage
+                summary["next_due_date"] = self._to_date(
+                    item.get("next_due_date")
                 )
+                summary["next_due_mileage"] = item.get(
+                    "next_due_mileage"
+                )
+
+        for summary in item_history.values():
+            last_done_mileage = summary["last_done_mileage"]
+            summary["mileage_since_last_done"] = (
+                current_mileage - last_done_mileage
+                if last_done_mileage is not None
+                and current_mileage >= last_done_mileage
+                else None
+            )
 
         first_visit = sorted_visits[0]
         last_visit = sorted_visits[-1]

@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pencil } from "lucide-react";
+import { getApiErrorMessage } from "@/shared/utils/api-error";
+import { toast } from "@/shared/components/ui/toastManager";
 
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -31,12 +33,6 @@ export function ReceiptEditDialog({
 
     const updateReceipt = useUpdateReceipt();
 
-    useEffect(() => {
-        if (open) {
-            setNotes(receipt.notes ?? "");
-        }
-    }, [open, receipt.notes]);
-
     const handleSubmit = async () => {
         try {
             await updateReceipt.mutateAsync({
@@ -47,18 +43,23 @@ export function ReceiptEditDialog({
             });
 
             setOpen(false);
-        } catch (error: any) {
-            console.error(
-                "UPDATE RECEIPT ERROR:",
-                error.response?.data ?? error,
-            );
+        } catch (error: unknown) {
+            toast.add({
+                type: "error",
+                description: getApiErrorMessage(error),
+            });
         }
+    };
+
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) setNotes(receipt.notes ?? "");
+        setOpen(nextOpen);
     };
 
     return (
         <Dialog
             open={open}
-            onOpenChange={setOpen}
+            onOpenChange={handleOpenChange}
         >
             <DialogTrigger
                 render={

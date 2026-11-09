@@ -9,31 +9,34 @@ interface VehiclePhotoProps {
 }
 
 export function VehiclePhoto({ photoUrl, alt, className = "" }: VehiclePhotoProps) {
-    const [src, setSrc] = useState<string>();
+    const [loadedPhoto, setLoadedPhoto] = useState<{ photoUrl: string; src: string }>();
 
     useEffect(() => {
-        if (!photoUrl) {
-            setSrc(undefined);
-            return;
-        }
-        if (!photoUrl.startsWith("/vehicles/")) {
-            setSrc(photoUrl);
-            return;
-        }
+        if (!photoUrl?.startsWith("/vehicles/")) return;
 
         const controller = new AbortController();
         let objectUrl: string | undefined;
         api.get<Blob>(photoUrl, { responseType: "blob", signal: controller.signal })
             .then(({ data }) => {
                 objectUrl = URL.createObjectURL(data);
-                setSrc(objectUrl);
+                setLoadedPhoto({ photoUrl, src: objectUrl });
             })
-            .catch(() => setSrc(undefined));
+            .catch(() => {
+                if (!controller.signal.aborted) {
+                    setLoadedPhoto({ photoUrl, src: "" });
+                }
+            });
         return () => {
             controller.abort();
             if (objectUrl) URL.revokeObjectURL(objectUrl);
         };
     }, [photoUrl]);
+
+    const src = !photoUrl
+        ? undefined
+        : photoUrl.startsWith("/vehicles/")
+          ? loadedPhoto?.photoUrl === photoUrl ? loadedPhoto.src || undefined : undefined
+          : photoUrl;
 
     return src ? (
         <img src={src} alt={alt} className={className} />

@@ -25,7 +25,7 @@ import {
 } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { ScrollArea, ScrollBar } from "@/shared/components/ui/scroll-area";
-import { toast } from "@/shared/components/ui/toast";
+import { toast } from "@/shared/components/ui/toastManager";
 
 import { useDeleteVehiclePhoto, useUpdateVehicle, useUploadVehiclePhoto } from "../hooks/useVehicles";
 import { VehiclePhotoField } from "./VehiclePhotoField";

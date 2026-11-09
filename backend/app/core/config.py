@@ -29,9 +29,6 @@ class Settings(BaseSettings):
     ai_research_provider: str = "gemini"
     ai_search_provider: str = "tavily"
 
-    openai_api_key: str = ""
-    openai_research_model: str = ""
-
     gemini_api_key: str = ""
     gemini_research_model: str = ""
 

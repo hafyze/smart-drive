@@ -13,13 +13,9 @@ import LoginPage from "@/features/auth/pages/LoginPage";
 import RegisterPage from "@/features/auth/pages/RegisterPage";
 
 import MaintenancePage from "@/features/maintenance/pages/MaintenancePage";
-import WorkshopsPage from "@/features/workshops/pages/WorkshopsPage";
-import AnalyticsPage from "@/features/analytics/pages/AnalyticsPage";
-import FleetPage from "@/features/fleet/pages/FleetPage";
-import ProfilePage from "@/features/profile/pages/ProfilePage";
-import SettingsPage from "@/features/settings/pages/SettingsPage";
 import VehicleDetailsPage from "@/features/garage/pages/VehicleDetailsPage";
 import ServiceHistoryPage from "@/features/maintenance/pages/ServiceHistoryPage";
+import NotFoundPage from "./NotFoundPage";
 
 import { ROUTES } from "./routes";
 
@@ -64,38 +60,10 @@ export default function AppRouter() {
                         element={<MaintenancePage />}
                     />
 
-                    <Route
-                        path={ROUTES.WORKSHOPS}
-                        element={<WorkshopsPage />}
-                    />
-
-                    <Route
-                        path={ROUTES.ANALYTICS}
-                        element={<AnalyticsPage />}
-                    />
-
-                    <Route
-                        path={ROUTES.FLEET}
-                        element={<FleetPage />}
-                    />
-
-                    <Route
-                        path={ROUTES.PROFILE}
-                        element={<ProfilePage />}
-                    />
-
-                    <Route
-                        path={ROUTES.SETTINGS}
-                        element={<SettingsPage />}
-                    />
-
                 </Route>
             </Route>
 
-            <Route
-                path="*"
-                element={<Navigate to={ROUTES.LOGIN} replace />}
-            />
+            <Route path="*" element={<NotFoundPage />} />
         </Routes>
     )
 }

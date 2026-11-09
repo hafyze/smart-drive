@@ -14,6 +14,27 @@ type UseCarouselParameters = Parameters<typeof useEmblaCarousel>
 type CarouselOptions = UseCarouselParameters[0]
 type CarouselPlugin = UseCarouselParameters[1]
 
+function useCanScroll(api: CarouselApi, direction: "prev" | "next") {
+  const subscribe = React.useCallback(
+    (onStoreChange: () => void) => {
+      if (!api) return () => {};
+      api.on("reInit", onStoreChange);
+      api.on("select", onStoreChange);
+      return () => {
+        api.off("reInit", onStoreChange);
+        api.off("select", onStoreChange);
+      };
+    },
+    [api],
+  );
+  const getSnapshot = React.useCallback(
+    () => direction === "prev" ? api?.canScrollPrev() ?? false : api?.canScrollNext() ?? false,
+    [api, direction],
+  );
+
+  return React.useSyncExternalStore(subscribe, getSnapshot, () => false);
+}
+
 type CarouselProps = {
   opts?: CarouselOptions
   plugins?: CarouselPlugin
@@ -58,14 +79,8 @@ function Carousel({
     },
     plugins
   )
-  const [canScrollPrev, setCanScrollPrev] = React.useState(false)
-  const [canScrollNext, setCanScrollNext] = React.useState(false)
-
-  const onSelect = React.useCallback((api: CarouselApi) => {
-    if (!api) return
-    setCanScrollPrev(api.canScrollPrev())
-    setCanScrollNext(api.canScrollNext())
-  }, [])
+  const canScrollPrev = useCanScroll(api, "prev")
+  const canScrollNext = useCanScroll(api, "next")
 
   const scrollPrev = React.useCallback(() => {
     api?.scrollPrev()
@@ -92,17 +107,6 @@ function Carousel({
     if (!api || !setApi) return
     setApi(api)
   }, [api, setApi])
-
-  React.useEffect(() => {
-    if (!api) return
-    onSelect(api)
-    api.on("reInit", onSelect)
-    api.on("select", onSelect)
-
-    return () => {
-      api?.off("select", onSelect)
-    }
-  }, [api, onSelect])
 
   return (
     <CarouselContext.Provider
@@ -238,5 +242,4 @@ export {
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
-  useCarousel,
 }

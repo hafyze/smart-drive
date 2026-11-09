@@ -4,9 +4,6 @@ from app.ai.research.base import (
 from app.ai.research.gemini_provider import (
     GeminiResearchProvider,
 )
-from app.ai.research.openai_provider import (
-    OpenAIResearchProvider,
-)
 from app.core.config import settings
 
 
@@ -23,7 +20,9 @@ def get_research_provider(
         return GeminiResearchProvider()
 
     if provider == "openai":
-        return OpenAIResearchProvider()
+        raise ValueError(
+            "OpenAI maintenance research is not implemented; configure GEMINI instead."
+        )
 
     raise ValueError(
         f"Unsupported AI research provider: {provider}"
