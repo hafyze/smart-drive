@@ -1,4 +1,6 @@
 import logging
+from pathlib import Path
+import traceback
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
@@ -27,6 +29,17 @@ from app.ai.predictive_schemas import PredictiveMaintenanceReport, PredictiveMai
 from app.ai.predictive_maintenance_service import PredictiveMaintenanceService, PredictiveResearchCooldownError
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_error_frames(exc: Exception) -> str:
+    """Return source locations without logging exception messages or request data."""
+    frames = traceback.extract_tb(exc.__traceback__ or None)[-5:]
+    if not frames:
+        return "unavailable"
+    return " <- ".join(
+        f"{Path(frame.filename).name}:{frame.lineno}:{frame.name}"
+        for frame in frames
+    )
 
 router = APIRouter(
     prefix="/ai",
@@ -77,7 +90,10 @@ async def research_predictive_maintenance(
         logger.warning("Predictive maintenance research is unavailable (%s)", type(exc).__name__)
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Predictive maintenance research is unavailable. Please try again later.") from exc
     except Exception as exc:
-        logger.warning("Predictive maintenance research failed for vehicle %s (%s)", vehicle_id, type(exc).__name__)
+        logger.warning(
+            "Predictive maintenance research failed for vehicle %s (%s; frames=%s)",
+            vehicle_id, type(exc).__name__, _safe_error_frames(exc),
+        )
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Predictive maintenance research could not be completed. Please try again.") from exc
 
 
@@ -146,9 +162,10 @@ async def research_vehicle(
         ) from exc
     except Exception as exc:
         logger.warning(
-            "AI maintenance research failed for vehicle %s (%s)",
+            "AI maintenance research failed for vehicle %s (%s; frames=%s)",
             vehicle_id,
             type(exc).__name__,
+            _safe_error_frames(exc),
         )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -262,7 +279,10 @@ async def send_vehicle_conversation_message(
             detail="The assistant is currently unavailable. Please try again later.",
         ) from exc
     except Exception as exc:
-        logger.warning("Vehicle assistant failed for vehicle %s (%s)", vehicle_id, type(exc).__name__)
+        logger.warning(
+            "Vehicle assistant failed for vehicle %s (%s; frames=%s)",
+            vehicle_id, type(exc).__name__, _safe_error_frames(exc),
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="The assistant could not complete the request. Please try again.",
